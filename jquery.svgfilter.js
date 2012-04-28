@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG filters for jQuery v1.3.2.
+   SVG filters for jQuery v1.4.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
@@ -97,7 +97,7 @@ $.extend(SVGFilter.prototype, {
 	blend: function(parent, result, mode, in1, in2, settings) {
 		var args = this._wrapper._args(arguments, ['result', 'mode', 'in1', 'in2']);
 		return this._wrapper._makeNode(args.parent, 'feBlend', $.extend(
-			{result: args.result, mode: args.mode, 'in': args.in1, in2: args.in2},
+			{result: args.result, mode: args.mode, in_: args.in1, in2: args.in2},
 			args.settings || {}));
 	},
 
@@ -125,7 +125,7 @@ $.extend(SVGFilter.prototype, {
 			args.settings = args.values;
 			args.values = null;
 		}
-		var sets = $.extend({result: args.result, 'in': args.in1, type: args.type},
+		var sets = $.extend({result: args.result, in_: args.in1, type: args.type},
 			(args.values != null ? {values: args.values} : {}));
 		return this._wrapper._makeNode(args.parent, 'feColorMatrix',
 			$.extend(sets, args.settings || {}));
@@ -213,7 +213,7 @@ $.extend(SVGFilter.prototype, {
 		var args = this._wrapper._args(arguments, ['result', 'colour'], ['colour']);
 		return this._wrapper._makeNode(args.parent, 'feDiffuseLighting',
 			$.extend($.extend({result: args.result},
-			(args.colour ? {'lighting-color': args.colour} : {})), args.settings || {}));
+			(args.colour ? {lightingColor: args.colour} : {})), args.settings || {}));
 	},
 
 	/* Add a displacement map filter.
@@ -226,7 +226,7 @@ $.extend(SVGFilter.prototype, {
 	displacementMap: function(parent, result, in1, in2, settings) {
 		var args = this._wrapper._args(arguments, ['result', 'in1', 'in2']);
 		return this._wrapper._makeNode(args.parent, 'feDisplacementMap',
-			$.extend({result: args.result, 'in': args.in1, in2: args.in2},
+			$.extend({result: args.result, in_: args.in1, in2: args.in2},
 			args.settings || {}));
 	},
 
@@ -251,8 +251,8 @@ $.extend(SVGFilter.prototype, {
 			args.settings = args.width;
 			args.x = null;
 		}
-		var sets = $.extend({result: args.result, 'flood-color': args.colour,
-			'flood-opacity': args.opacity}, (args.x != null ?
+		var sets = $.extend({result: args.result, floodColor: args.colour,
+			floodOpacity: args.opacity}, (args.x != null ?
 			{x: args.x, y: args.y, width: args.width, height: args.height} : {}));
 		return this._wrapper._makeNode(args.parent, 'feFlood',
 			$.extend(sets, args.settings || {}));
@@ -270,7 +270,7 @@ $.extend(SVGFilter.prototype, {
 		var args = this._wrapper._args(arguments,
 			['result', 'in1', 'stdDevX', 'stdDevY'], ['stdDevY']);
 		return this._wrapper._makeNode(args.parent, 'feGaussianBlur', $.extend(
-			{result: args.result, 'in': args.in1, stdDeviation: args.stdDevX +
+			{result: args.result, in_: args.in1, stdDeviation: args.stdDevX +
 			(args.stdDevY ? ' ' + args.stdDevY : '')}, args.settings || {}));
 	},
 
@@ -299,7 +299,7 @@ $.extend(SVGFilter.prototype, {
 		var node = this._wrapper._makeNode(args.parent, 'feMerge', $.extend(
 			{result: args.result}, args.settings || {}));
 		for (var i = 0; i < args.refs.length; i++) {
-			this._wrapper._makeNode(node, 'feMergeNode', {'in': args.refs[i]});
+			this._wrapper._makeNode(node, 'feMergeNode', {in_: args.refs[i]});
 		}
 		return node;
 	},
@@ -317,7 +317,7 @@ $.extend(SVGFilter.prototype, {
 		var args = this._wrapper._args(arguments, ['result', 'in1',
 			'operator', 'radiusX', 'radiusY'], ['radiusY']);
 		return this._wrapper._makeNode(args.parent, 'feMorphology', $.extend(
-			{result: args.result, 'in': args.in1, operator: args.operator,
+			{result: args.result, in_: args.in1, operator: args.operator,
 			radius: args.radiusX + (args.radiusY ? ' ' + args.radiusY : '')},
 			args.settings || {}));
 	},
@@ -333,7 +333,7 @@ $.extend(SVGFilter.prototype, {
 	offset: function(parent, result, in1, dx, dy, settings) {
 		var args = this._wrapper._args(arguments, ['result', 'in1', 'dx', 'dy']);
 		return this._wrapper._makeNode(args.parent, 'feOffset', $.extend(
-			{result: args.result, 'in': args.in1, dx: args.dx, dy: args.dy},
+			{result: args.result, in_: args.in1, dx: args.dx, dy: args.dy},
 			args.settings || {}));
 	},
 
@@ -353,7 +353,7 @@ $.extend(SVGFilter.prototype, {
 			'surfaceScale', 'specularConstant', 'specularExponent'],
 			['surfaceScale', 'specularConstant', 'specularExponent']);
 		return this._wrapper._makeNode(args.parent, 'feSpecularLighting', $.extend(
-			{result: args.result, 'in': args.in1, surfaceScale: args.surfaceScale,
+			{result: args.result, in_: args.in1, surfaceScale: args.surfaceScale,
 			specularConstant: args.specularConstant, specularExponent: args.specularExponent},
 			args.settings || {}));
 	},
@@ -372,7 +372,7 @@ $.extend(SVGFilter.prototype, {
 		var args = this._wrapper._args(arguments,
 			['result', 'in1', 'x', 'y', 'width', 'height']);
 		return this._wrapper._makeNode(args.parent, 'feTile', $.extend(
-			{result: args.result, 'in': args.in1, x: args.x, y: args.y,
+			{result: args.result, in_: args.in1, x: args.x, y: args.y,
 			width: args.width, height: args.height}, args.settings || {}));
 	},
 

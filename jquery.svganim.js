@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG attribute animations for jQuery v1.3.2.
+   SVG attribute animations for jQuery v1.4.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -7,31 +7,37 @@
 
 (function($) { // Hide scope, no $ conflict
 
-// Enable animation for all of these SVG numeric attributes - named as svg-*
+// Enable animation for all of these SVG numeric attributes -
+// named as svg-* or svg* (with first character upper case)
 $.each(['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'x1', 'y1', 'x2', 'y2',
-		'stroke-width', 'opacity', 'fill-opacity', 'stroke-opacity', 'font-size'],
+		'stroke-width', 'strokeWidth', 'opacity', 'fill-opacity', 'fillOpacity',
+		'stroke-opacity', 'strokeOpacity', 'font-size', 'fontSize'],
 	function(i, attrName) {
-		$.fx.step['svg-' + attrName] = function(fx) {
-			var attr = fx.elem.attributes.getNamedItem(attrName);
-			if (fx.state == 0) {
+		var ccName = attrName.charAt(0).toUpperCase() + attrName.substr(1);
+		$.fx.step['svg' + ccName] = $.fx.step['svg-' + attrName] = function(fx) {
+			var realAttrName = $.svg._attrNames[attrName] || attrName;
+			var attr = fx.elem.attributes.getNamedItem(realAttrName);
+			if (!fx.set) {
 				fx.start = (attr ? parseFloat(attr.nodeValue) : 0);
-				var offset = fx.options.curAnim['svg-' + attrName];
+				var offset = fx.options.curAnim['svg-' + attrName] ||
+					fx.options.curAnim['svg' + ccName];
 				if (/^[+-]=/.exec(offset)) {
 					fx.end = fx.start + parseFloat(offset.replace(/=/, ''));
 				}
+				fx.set = true;
 			}
 			var value = (fx.pos * (fx.end - fx.start) + fx.start) + (fx.unit == '%' ? '%' : '');
-			(attr ? attr.nodeValue = value : fx.elem.setAttribute(attrName, value));
+			(attr ? attr.nodeValue = value : fx.elem.setAttribute(realAttrName, value));
 		};
 	}
 );
 
 // Enable animation for the SVG viewBox attribute
-$.fx.step['svg-viewBox'] = function(fx) {
+$.fx.step['svgViewBox'] = $.fx.step['svg-viewBox'] = function(fx) {
 	var attr = fx.elem.attributes.getNamedItem('viewBox');
-	if (fx.state == 0) {
+	if (!fx.set) {
 		fx.start = parseViewBox(attr ? attr.nodeValue : '');
-		var offset = fx.options.curAnim['svg-viewBox'];
+		var offset = fx.options.curAnim['svg-viewBox'] || fx.options.curAnim['svgViewBox'];
 		fx.end = parseViewBox(offset);
 		if (/^[+-]=/.exec(offset)) {
 			offset = offset.split(' ');
@@ -44,6 +50,7 @@ $.fx.step['svg-viewBox'] = function(fx) {
 				}
 			}
 		}
+		fx.set = true;
 	}
 	var value = $.map(fx.start, function(n, i) {
 		return (fx.pos * (fx.end[i] - n) + n);
@@ -69,11 +76,12 @@ function parseViewBox(value) {
 }
 
 // Enable animation for the SVG transform attribute
-$.fx.step['svg-transform'] = function(fx) {
+$.fx.step['svgTransform'] = $.fx.step['svg-transform'] = function(fx) {
 	var attr = fx.elem.attributes.getNamedItem('transform');
-	if (fx.state == 0) {
+	if (!fx.set) {
 		fx.start = parseTransform(attr ? attr.nodeValue : '');
 		fx.end = parseTransform(fx.end, fx.start);
+		fx.set = true;
 	}
 	var transform = '';
 	for (var i = 0; i < fx.end.order.length; i++) {
@@ -170,12 +178,14 @@ function parseTransform(value, original) {
 // Enable animation for all of these SVG colour properties - based on jquery.color.js
 $.each(['fill', 'stroke'],
 	function(i, attrName) {
-		$.fx.step['svg-' + attrName] = function(fx) {
-			if (fx.state == 0) {
+		var ccName = attrName.charAt(0).toUpperCase() + attrName.substr(1);
+		$.fx.step['svg' + ccName] = $.fx.step['svg-' + attrName] = function(fx) {
+			if (!fx.set) {
 				fx.start = getColour(fx.elem, attrName);
 				var toNone = (fx.end == 'none');
 				fx.end = (toNone ? getColour(fx.elem.parentNode, attrName) : getRGB(fx.end));
 				fx.end[3] = toNone;
+				fx.set = true;
 			}
 			var attr = fx.elem.attributes.getNamedItem(attrName);
 			var colour = 'rgb(' + [

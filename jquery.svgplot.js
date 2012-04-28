@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG plotting extension for jQuery v1.3.2.
+   SVG plotting extension for jQuery v1.4.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) December 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
@@ -15,7 +15,7 @@ function SVGPlot(wrapper) {
 	this._wrapper = wrapper; // The attached SVG wrapper object
 	this._drawNow = false; // True for immediate update, false to wait for redraw call
 	// The plot title and settings
-	this._title = {value: '', offset: 25, settings: {'text-anchor': 'middle'}};
+	this._title = {value: '', offset: 25, settings: {textAnchor: 'middle'}};
 	this._area = [0.1, 0.1, 0.8, 0.9]; // The chart area: left, top, right, bottom,
 		// > 1 in pixels, <= 1 as proportion
 	this._areaFormat = {fill: 'none', stroke: 'black'}; // The formatting for the plot area
@@ -24,7 +24,7 @@ function SVGPlot(wrapper) {
 	this._functions = []; // The functions to be plotted, each is an object
 	this._onstatus = null; // The callback function for status updates
 	this._uuid = new Date().getTime();
-	this._plotCont = this._wrapper.svg(0, 0, 0, 0, {'class': 'svg-plot'}); // The main container for the plot
+	this._plotCont = this._wrapper.svg(0, 0, 0, 0, {class_: 'svg-plot'}); // The main container for the plot
 	
 	this.xAxis = new SVGPlotAxis(this); // The main x-axis
 	this.xAxis.title('X', 20);
@@ -145,7 +145,7 @@ $.extend(SVGPlot.prototype, {
 			offset = null;
 		}
 		this._title = {value: value, offset: offset || this._title.offset,
-			settings: $.extend({'text-anchor': 'middle'}, settings || {})};
+			settings: $.extend({textAnchor: 'middle'}, settings || {})};
 		this._drawPlot();
 		return this;
 	},
@@ -236,7 +236,7 @@ $.extend(SVGPlot.prototype, {
 		var clip = this._wrapper.other(this._plotCont, 'clipPath', {id: 'clip' + this._uuid});
 		this._wrapper.rect(clip, dims[this.X], dims[this.Y], dims[this.W], dims[this.H]);
 		this._plot = this._wrapper.group(this._plotCont,
-			{'class': 'foreground', 'clip-path': 'url(#clip' + this._uuid + ')'});
+			{class_: 'foreground', clipPath: 'url(#clip' + this._uuid + ')'});
 		this._drawAxis(true);
 		this._drawAxis(false);
 		for (var i = 0; i < this._functions.length; i++) {
@@ -289,7 +289,7 @@ $.extend(SVGPlot.prototype, {
 	   @param  noYGrid  (boolean) true to suppress the y-gridlines, false to draw them (optional)
 	   @return  (element) the background group element */
 	_drawChartBackground: function(noXGrid, noYGrid) {
-		var bg = this._wrapper.group(this._plotCont, {'class': 'background'});
+		var bg = this._wrapper.group(this._plotCont, {class_: 'background'});
 		var dims = this._getDims();
 		this._wrapper.rect(bg, dims[this.X], dims[this.Y], dims[this.W], dims[this.H], this._areaFormat);
 		if (this._gridlines[0] && this.yAxis._ticks.major && !noYGrid) {
@@ -328,9 +328,9 @@ $.extend(SVGPlot.prototype, {
 		var axis2 = (horiz ? this.yAxis : this.xAxis);
 		var dims = this._getDims();
 		var scales = this._getScales();
-		var gl = this._wrapper.group(this._plot, $.extend({'class': id}, axis._lineFormat));
-		var gt = this._wrapper.group(this._plot, $.extend({'class': id + 'Labels',
-			'text-anchor': (horiz ? 'middle' : 'end')}, axis._labelFormat));
+		var gl = this._wrapper.group(this._plot, $.extend({class_: id}, axis._lineFormat));
+		var gt = this._wrapper.group(this._plot, $.extend({class_: id + 'Labels',
+			textAnchor: (horiz ? 'middle' : 'end')}, axis._labelFormat));
 		var zero = (horiz ? axis2._scale.max : -axis2._scale.min) *
 			scales[horiz ? 1 : 0] + (horiz ? dims[this.Y] : dims[this.X]);
 		this._wrapper.line(gl, (horiz ? dims[this.X] : zero), (horiz ? zero : dims[this.Y]),
@@ -365,12 +365,12 @@ $.extend(SVGPlot.prototype, {
 		if (axis._title) {
 			if (horiz) {
 				this._wrapper.text(this._plotCont, dims[this.X] - axis._titleOffset,
-					zero, axis._title, {'text-anchor': 'end'});
+					zero, axis._title, {textAnchor: 'end'});
 			}
 			else {
 				this._wrapper.text(this._plotCont, zero,
 					dims[this.Y] + dims[this.H] + axis._titleOffset,
-					axis._title, {'text-anchor' : 'middle'});
+					axis._title, {textAnchor : 'middle'});
 			}
 		}
 	},
@@ -397,8 +397,8 @@ $.extend(SVGPlot.prototype, {
 			first = false;
 		}
 		this._wrapper.path(this._plot, path,
-			$.extend({'class': 'fn' + cur, fill: 'none', stroke: fn._stroke,
-			'stroke-width': fn._strokeWidth}, this._showStatus(fn._name),
+			$.extend({class_: 'fn' + cur, fill: 'none', stroke: fn._stroke,
+			strokeWidth: fn._strokeWidth}, this._showStatus(fn._name),
 			fn._settings || {}));
 	},
 
@@ -413,7 +413,7 @@ $.extend(SVGPlot.prototype, {
 		if (!this.legend._show) {
 			return;
 		}
-		var g = this._wrapper.group(this._plotCont, {'class': 'legend'});
+		var g = this._wrapper.group(this._plotCont, {class_: 'legend'});
 		var dims = this._getDims(this.legend._area);
 		this._wrapper.rect(g, dims[this.X], dims[this.Y], dims[this.W], dims[this.H],
 			this.legend._bgSettings);
@@ -564,7 +564,7 @@ $.extend(SVGPlotFunction.prototype, {
 	format: function(stroke, strokeWidth, settings) {
 		if (arguments.length == 0) {
 			return $.extend({stroke: this._stroke,
-				'stroke-width': this._strokeWidth}, this._settings);
+				strokeWidth: this._strokeWidth}, this._settings);
 		}
 		if (typeof strokeWidth != 'number') {
 			settings = strokeWidth;
@@ -604,7 +604,7 @@ function SVGPlotAxis(plot, title, min, max, major, minor) {
 	this._titleFormat = {}; // Formatting settings for the title
 	this._titleOffset = 0; // The offset for positioning the title
 	this._labelFormat = {}; // Formatting settings for the labels
-	this._lineFormat = {stroke: 'black', 'stroke-width': 1}; // Formatting settings for the axis lines
+	this._lineFormat = {stroke: 'black', strokeWidth: 1}; // Formatting settings for the axis lines
 	this._ticks = {major: major || 10, minor: minor || 0, size: 10, position: 'both'}; // Tick mark options
 	this._scale = {min: min || 0, max: max || 100}; // Axis scale settings
 	this._crossAt = 0; // Where this axis crosses the other one. */
@@ -699,8 +699,8 @@ $.extend(SVGPlotAxis.prototype, {
 			settings = width;
 			width = null;
 		}
-		$.extend(this._lineFormat, {stroke: colour,
-			'stroke-width': width || this._lineFormat['stroke-width']}, settings || {});
+		$.extend(this._lineFormat, {stroke: colour, strokeWidth:
+			width || this._lineFormat.strokeWidth}, settings || {});
 		this._plot._drawPlot();
 		return this;
 	},

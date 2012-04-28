@@ -1,6 +1,6 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery compatibility from v1.0.1 to v1.3.0.
-   Written by Keith Wood (kbwood@virginbroadband.com.au) May 2008.
+   SVG for jQuery compatibility from v1.0.1 to v1.4.0.
+   Written by Keith Wood (kbwood{at}iinet.com.au) May 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
@@ -62,7 +62,7 @@ $.fn.svg = function(loadURL, onLoad, settings) {
 		onLoad = null;
 	}
 	return this.each(function() {
-		$.svg._connectSVG(this, {loadURL: loadURL, onLoad: onLoad, settings: settings});
+		$.svg._attachSVG(this, {loadURL: loadURL, onLoad: onLoad, settings: settings});
 	});
 };
 

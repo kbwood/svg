@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery v1.3.2.
+   SVG for jQuery v1.4.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -49,10 +49,47 @@ $.extend(SVGManager.prototype, {
 	/* SVG wrapper class. */
 	_wrapperClass: SVGWrapper,
 
+	/* Camel-case versions of attribute names containing dashes or are reserved words. */
+	_attrNames: {class_: 'class', in_: 'in',
+		alignmentBaseline: 'alignment-baseline', baselineShift: 'baseline-shift',
+		clipPath: 'clip-path', clipRule: 'clip-rule',
+		colorInterpolation: 'color-interpolation',
+		colorInterpolationFilters: 'color-interpolation-filters',
+		colorRendering: 'color-rendering', dominantBaseline: 'dominant-baseline',
+		enableBackground: 'enable-background', fillOpacity: 'fill-opacity',
+		fillRule: 'fill-rule', floodColor: 'flood-color',
+		floodOpacity: 'flood-opacity', fontFamily: 'font-family',
+		fontSize: 'font-size', fontSizeAdjust: 'font-size-adjust',
+		fontStretch: 'font-stretch', fontStyle: 'font-style',
+		fontVariant: 'font-variant', fontWeight: 'font-weight',
+		glyphOrientationHorizontal: 'glyph-orientation-horizontal',
+		glyphOrientationVertical: 'glyph-orientation-vertical',
+		horizAdvX: 'horiz-adv-x', horizOriginX: 'horiz-origin-x',
+		imageRendering: 'image-rendering', letterSpacing: 'letter-spacing',
+		lightingColor: 'lighting-color', markerEnd: 'marker-end',
+		markerMid: 'marker-mid', markerStart: 'marker-start',
+		stopColor: 'stop-color', stopOpacity: 'stop-opacity',
+		strikethroughPosition: 'strikethrough-position',
+		strikethroughThickness: 'strikethrough-thickness',
+		strokeDashArray: 'stroke-dasharray', strokeDashOffset: 'stroke-dashoffset',
+		strokeLineCap: 'stroke-linecap', strokeLineJoin: 'stroke-linejoin',
+		strokeMiterLimit: 'stroke-miterlimit', strokeOpacity: 'stroke-opacity',
+		strokeWidth: 'stroke-width', textAnchor: 'text-anchor',
+		textDecoration: 'text-decoration', textRendering: 'text-rendering',
+		underlinePosition: 'underline-position', underlineThickness: 'underline-thickness',
+		vertAdvY: 'vert-adv-y', vertOriginY: 'vert-origin-y',
+		wordSpacing: 'word-spacing', writingMode: 'writing-mode'},
+
 	/* Add the SVG object to its container. */
 	_attachSVG: function(container, settings) {
 		if ($(container).hasClass(this.markerClassName)) {
 			return;
+		}
+		if (typeof settings == 'string') {
+			settings = {loadURL: settings};
+		}
+		else if (typeof settings == 'function') {
+			settings = {onLoad: settings};
 		}
 		$(container).addClass(this.markerClassName);
 		try {
@@ -69,9 +106,8 @@ $.extend(SVGManager.prototype, {
 					container.id = 'svg' + (this._uuid++);
 				}
 				this._settings[container.id] = settings;
-				container.innerHTML = '<embed type="image/svg+xml" width="' +
-					container.clientWidth + '" height="' + container.clientHeight +
-					'" src="' + (settings.initPath || '') + 'blank.svg"/>';
+				container.innerHTML = '<embed type="image/svg+xml" width="100%" ' +
+					'height="100%" src="' + (settings.initPath || '') + 'blank.svg"/>';
 			}
 			else {
 				container.innerHTML = '<p class="svg_error">' +
@@ -109,14 +145,19 @@ $.extend(SVGManager.prototype, {
 		this._settings[container.id] = null;
 		var wrapper = new this._wrapperClass(svg, container);
 		$.data(container, PROP_NAME, wrapper);
-		if (settings.loadURL) { // Load URL
-			wrapper.load(settings.loadURL, settings);
+		try {
+			if (settings.loadURL) { // Load URL
+				wrapper.load(settings.loadURL, settings);
+			}
+			if (settings.settings) { // Additional settings
+				wrapper.configure(settings.settings);
+			}
+			if (settings.onLoad && !settings.loadURL) { // Onload callback
+				settings.onLoad.apply(container, [wrapper]);
+			}
 		}
-		if (settings.settings) { // Additional settings
-			wrapper.configure(settings.settings);
-		}
-		if (settings.onLoad && !settings.loadURL) { // Onload callback
-			settings.onLoad.apply(container, [wrapper]);
+		catch (e) {
+			alert(e);
 		}
 	},
 
@@ -404,8 +445,8 @@ $.extend(SVGWrapper.prototype, {
 		for (var i = 0; i < stops.length; i++) {
 			var stop = stops[i];
 			this._makeNode(node, 'stop', $.extend(
-				{offset: stop[0], 'stop-color': stop[1]}, 
-				(stop[2] != null ? {'stop-opacity': stop[2]} : {})));
+				{offset: stop[0], stopColor: stop[1]}, 
+				(stop[2] != null ? {stopOpacity: stop[2]} : {})));
 		}
 		return node;
 	},
@@ -736,7 +777,7 @@ $.extend(SVGWrapper.prototype, {
 			var value = settings[name];
 			if (value != null && value != null && 
 					(typeof value != 'string' || value != '')) {
-				node.setAttribute(name, value);
+				node.setAttribute($.svg._attrNames[name] || name, value);
 			}
 		}
 		parent.appendChild(node);
@@ -823,8 +864,10 @@ $.extend(SVGWrapper.prototype, {
 	},
 
 	/* Load an external SVG document.
-	   @param  url       (string) the location of the SVG document
+	   @param  url       (string) the location of the SVG document or
+	                     the actual SVG content
 	   @param  settings  (boolean) see addTo below or
+	                     (function) see onLoad below or
 	                     (object) additional settings for the load with attributes below:
 	                       addTo       (boolean) true to add to what's already there,
 	                                   or false to clear the canvas first
@@ -835,35 +878,47 @@ $.extend(SVGWrapper.prototype, {
 	                                   optional error message as a parameter
 	   @return  (SVGWrapper) this root */
 	load: function(url, settings) {
-		if (typeof settings == 'boolean') {
-			settings = {addTo: settings};
-		}
-		else {
-			settings = settings || {};
-		}
+		settings = (typeof settings == 'boolean'? {addTo: settings} :
+			(typeof settings == 'function'? {onLoad: settings} : settings || {}));
 		if (!settings.addTo) {
 			this.clear(false);
 		}
 		var size = [this._svg.getAttribute('width'), this._svg.getAttribute('height')];
 		var wrapper = this;
-		var http = $.ajax({url: url, dataType: ($.browser.msie ? 'text' : 'xml'),
-			success: function(data) {
-			if ($.browser.msie) { // Doesn't load properly!
-				var xml = new ActiveXObject('Microsoft.XMLDOM');
-				xml.validateOnParse = false;
-				xml.resolveExternals = false;
-				xml.loadXML(data);
-				if (xml.parseError.errorCode != 0) {
-					var message = $.svg.local.errorLoadingText + ': ' + xml.parseError.reason;
-					if (settings.onLoad) {
-						settings.onLoad.apply(wrapper._container, [wrapper, message]);
-					}
-					else {
-						wrapper.text(null, 10, 20, message);
-					}
-					return;
-				}
-				data = xml;
+		// Report a problem with the load
+		var reportError = function(message) {
+			message = $.svg.local.errorLoadingText + ': ' + message;
+			if (settings.onLoad) {
+				settings.onLoad.apply(wrapper._container, [wrapper, message]);
+			}
+			else {
+				wrapper.text(null, 10, 20, message);
+			}
+		};
+		// Create a DOM from SVG content
+		var loadXML4IE = function(data) {
+			var xml = new ActiveXObject('Microsoft.XMLDOM');
+			xml.validateOnParse = false;
+			xml.resolveExternals = false;
+			xml.async = false;
+			xml.loadXML(data);
+			if (xml.parseError.errorCode != 0) {
+				reportError(xml.parseError.reason);
+				return null;
+			}
+			return xml;
+		};
+		// Load the SVG DOM
+		var loadSVG = function(data) {
+			if (!data) {
+				return;
+			}
+			if (data.documentElement.nodeName != 'svg') {
+				var errors = data.getElementsByTagName('parsererror');
+				var messages = (errors.length ? errors[0].getElementsByTagName('div') : []); // Safari
+				reportError(!errors.length ? '???' :
+					(messages.length ? messages[0] : errors[0]).firstChild.nodeValue);
+				return;
 			}
 			var attrs = {};
 			for (var i = 0; i < data.documentElement.attributes.length; i++) {
@@ -891,16 +946,19 @@ $.extend(SVGWrapper.prototype, {
 			if (settings.onLoad) {
 				settings.onLoad.apply(wrapper._container, [wrapper]);
 			}
-		}, error: function(http, message, exc) {
-			message = $.svg.local.errorLoadingText + ': ' + message +
-				(exc ? ' ' + exc.message : '');
-			if (settings.onLoad) {
-				settings.onLoad.apply(wrapper._container, [wrapper, message]);
-			}
-			else {
-				wrapper.text(null, 10, 20, message);
-			}
-		}});
+		};
+		if (url.match('<svg')) { // Inline SVG
+			loadSVG($.browser.msie ? loadXML4IE(url) :
+				new DOMParser().parseFromString(url, 'text/xml'));
+		}
+		else { // Remote SVG
+			$.ajax({url: url, dataType: ($.browser.msie ? 'text' : 'xml'),
+				success: function(xml) {
+					loadSVG($.browser.msie ? loadXML4IE(xml) : xml);
+				}, error: function(http, message, exc) {
+					reportError(message + (exc ? ' ' + exc.message : ''));
+				}});
+		}
 		return this;
 	},
 
@@ -1244,97 +1302,6 @@ $.fn.svg = function(options) {
 			$.svg._attachSVG(this, options || {});
 		} 
 	});
-};
-
-/* Support adding class names to SVG nodes. */
-var origAddClass = $.fn.addClass;
-
-$.fn.addClass = function(classNames) {
-	classNames = classNames || '';
-	var addName = function(name, names) {
-		return names + ($.inArray(name, names.split(/\s+/)) == -1 ?
-			(names ? ' ' : '') + name : '');
-	};
-	return this.each(function() {
-		if (this.nodeType == 1 && this.namespaceURI == $.svg.svgNS) {
-			var node = this;
-			$.each(classNames.split(/\s+/), function(i, className) {
-				if (node.className) {
-					node.className.baseVal =
-						addName(className, node.className.baseVal);
-				}
-				else {
-					node.setAttribute('class',
-						addName(className, node.getAttribute('class')));
-				}
-			});
-		}
-		else {
-			origAddClass.apply($(this), [classNames]);
-		}
-	});
-};
-
-/* Support removing class names from SVG nodes. */
-var origRemoveClass = $.fn.removeClass;
-
-$.fn.removeClass = function(classNames) {
-	classNames = classNames || '';
-	var removeName = function(name, names) {
-		names = names.split(/\s+/);
-		var remove = $.inArray(name, names);
-		return $.grep(names, function(n, i) { return i != remove; }).join(' ');
-	};
-	return this.each(function() {
-		if (this.nodeType == 1 && this.namespaceURI == $.svg.svgNS) {
-			var node = this;
-			$.each(classNames.split(/\s+/), function(i, className) {
-				if (node.className) {
-					node.className.baseVal =
-						removeName(className, node.className.baseVal);
-				}
-				else {
-					node.setAttribute('class',
-						removeName(className, node.getAttribute('class')));
-				}
-			});
-		}
-		else {
-			origRemoveClass.apply($(this), [classNames]);
-		}
-	});
-};
-
-/* Support toggling class names on SVG nodes. */
-$.fn.toggleClass = function(className, state) {
-	if (typeof state !== 'boolean') {
-		state = !this.hasClass(className);
-	}
-	this[(state ? 'add' : 'remove') + 'Class'](className);
-};
-
-/* Support checking class names on SVG nodes. */
-var origHasClass = $.fn.hasClass;
-
-$.fn.hasClass = function(className) {
-	className = className || '';
-	var found = false;
-	this.each(function() {
-		if (this.nodeType == 1 && this.namespaceURI == $.svg.svgNS) {
-			var names = (this.className ? this.className.baseVal :
-				this.getAttribute('class')).split(/\s+/);
-			if ($.inArray(className, names) > -1) {
-				found = true;
-			}
-		}
-		else {
-			if (origHasClass.apply($(this), [className])) {
-				found = true;
-			}
-		}
-		return !found;
-	});
-	return found;
 };
 
 /* Determine whether an object is an array. */

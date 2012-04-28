@@ -4,8 +4,13 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>jQuery SVG Basics</title>
-<script type="text/javascript" src="jquery-1.3.1.js"></script>
-<script type="text/javascript" src="jquery.svg.js"></script>
+<style type="text/css">
+@import "css/jquery.svg.css";
+
+#svgbasics { width: 400px; height: 300px; border: 1px solid #484; }
+</style>
+<script type="text/javascript" src="js/jquery-1.3.2.js"></script>
+<script type="text/javascript" src="js/jquery.svg.js"></script>
 <script type="text/javascript">
 $(function() {
 	$('#svgbasics').svg({onLoad: drawInitial});
@@ -52,15 +57,6 @@ function random(range) {
 	return Math.floor(Math.random() * range);
 }
 </script>
-<style type="text/css">
-@import "jquery.svg.css";
-
-#svgbasics {
-	width: 400px;
-	height: 300px;
-	border: 1px solid #484;
-}
-</style>
 </head>
 <body>
 <h1>jQuery SVG Basics</h1>

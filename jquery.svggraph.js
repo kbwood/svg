@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG graphing extension for jQuery v1.3.2.
+   SVG graphing extension for jQuery v1.4.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
@@ -48,14 +48,14 @@ function SVGGraph(wrapper) {
 	}
 	this._chartOptions = {}; // Extra options for the graph type
 	// The graph title and settings
-	this._title = {value: '', offset: 25, settings: {'text-anchor': 'middle'}};
+	this._title = {value: '', offset: 25, settings: {textAnchor: 'middle'}};
 	this._area = [0.1, 0.1, 0.8, 0.9]; // The chart area: left, top, right, bottom,
 		// > 1 in pixels, <= 1 as proportion
 	this._chartFormat = {fill: 'none', stroke: 'black'}; // The formatting for the chart area
 	this._gridlines = []; // The formatting of the x- and y-gridlines
 	this._series = []; // The series to be plotted, each is an object
 	this._onstatus = null; // The callback function for status updates
-	this._chartCont = this._wrapper.svg(0, 0, 0, 0, {'class': 'svg-graph'}); // The main container for the graph
+	this._chartCont = this._wrapper.svg(0, 0, 0, 0, {class_: 'svg-graph'}); // The main container for the graph
 	
 	this.xAxis = new SVGGraphAxis(this); // The main x-axis
 	this.xAxis.title('', 40);
@@ -257,7 +257,7 @@ $.extend(SVGGraph.prototype, {
 			offset = null;
 		}
 		this._title = {value: value, offset: offset || this._title.offset,
-			settings: $.extend({'text-anchor': 'middle'}, settings || {})};
+			settings: $.extend({textAnchor: 'middle'}, settings || {})};
 		this._drawGraph();
 		return this;
 	},
@@ -379,7 +379,7 @@ $.extend(SVGGraph.prototype, {
 	   @param  noYGrid  (boolean) true to suppress the y-gridlines, false to draw them (optional)
 	   @return  (element) the background group element */
 	_drawChartBackground: function(noXGrid, noYGrid) {
-		var bg = this._wrapper.group(this._chartCont, {'class': 'background'});
+		var bg = this._wrapper.group(this._chartCont, {class_: 'background'});
 		var dims = this._getDims();
 		this._wrapper.rect(bg, dims[this.X], dims[this.Y], dims[this.W], dims[this.H], this._chartFormat);
 		if (this._gridlines[0] && this.yAxis._ticks.major && !noYGrid) {
@@ -425,7 +425,7 @@ $.extend(SVGGraph.prototype, {
 		}
 		if (this.yAxis) {
 			if (this.yAxis._title) {
-				this._wrapper.text(this._chartCont, 0, 0, this.yAxis._title, {'text-anchor': 'middle',
+				this._wrapper.text(this._chartCont, 0, 0, this.yAxis._title, {textAnchor: 'middle',
 					transform: 'translate(' + (dims[this.X] - this.yAxis._titleOffset) + ',' +
 					(dims[this.Y] + dims[this.H] / 2) + ') rotate(-90)'});
 			}
@@ -442,7 +442,7 @@ $.extend(SVGGraph.prototype, {
 		}
 		if (this.y2Axis) {
 			if (this.y2Axis._title) {
-				this._wrapper.text(this._chartCont, 0, 0, this.y2Axis._title, {'text-anchor': 'middle',
+				this._wrapper.text(this._chartCont, 0, 0, this.y2Axis._title, {textAnchor: 'middle',
 					transform: 'translate(' + (dims[this.X] + dims[this.W] + this.y2Axis._titleOffset) +
 					',' + (dims[this.Y] + dims[this.H] / 2) + ') rotate(-90)'});
 			}
@@ -460,9 +460,9 @@ $.extend(SVGGraph.prototype, {
 	   @param  y2    (number) ending y-coodinate for the axis */
 	_drawAxis: function(axis, id, x1, y1, x2, y2) {
 		var horiz = (y1 == y2);
-		var gl = this._wrapper.group(this._chartCont, $.extend({'class': id}, axis._lineFormat));
-		var gt = this._wrapper.group(this._chartCont, $.extend({'class': id + 'Labels',
-			'text-anchor': (horiz ? 'middle' : 'end')}, axis._labelFormat));
+		var gl = this._wrapper.group(this._chartCont, $.extend({class_: id}, axis._lineFormat));
+		var gt = this._wrapper.group(this._chartCont, $.extend({class_: id + 'Labels',
+			textAnchor: (horiz ? 'middle' : 'end')}, axis._labelFormat));
 		this._wrapper.line(gl, x1, y1, x2, y2);
 		if (axis._ticks.major) {
 			var bottomRight = (x2 > (this._getValue(this._chartCont, 'width') / 2) &&
@@ -532,7 +532,7 @@ $.extend(SVGGraph.prototype, {
 		if (!this.legend._show) {
 			return;
 		}
-		var g = this._wrapper.group(this._chartCont, {'class': 'legend'});
+		var g = this._wrapper.group(this._chartCont, {class_: 'legend'});
 		var dims = this._getDims(this.legend._area);
 		this._wrapper.rect(g, dims[this.X], dims[this.Y], dims[this.W], dims[this.H],
 			this.legend._bgSettings);
@@ -546,7 +546,7 @@ $.extend(SVGGraph.prototype, {
 			this._wrapper.rect(g, xBase + (horiz ? i * offset : 0),
 				yBase + (horiz ? 0 : i * offset) - this.legend._sampleSize,
 				this.legend._sampleSize, this.legend._sampleSize,
-				{fill: series._fill, stroke: series._stroke, 'stroke-width': 1});
+				{fill: series._fill, stroke: series._stroke, strokeWidth: 1});
 			this._wrapper.text(g, xBase + (horiz ? i * offset : 0) + this.legend._sampleSize + 5,
 				yBase + (horiz ? 0 : i * offset), series._name, this.legend._textSettings);
 		}
@@ -643,7 +643,7 @@ $.extend(SVGGraphSeries.prototype, {
 	format: function(fill, stroke, strokeWidth, settings) {
 		if (arguments.length == 0) {
 			return $.extend({fill: this._fill, stroke: this._stroke,
-				'stroke-width': this._strokeWidth}, this._settings);
+				strokeWidth: this._strokeWidth}, this._settings);
 		}
 		if (typeof stroke != 'string') {
 			settings = strokeWidth;
@@ -683,7 +683,7 @@ function SVGGraphAxis(graph, title, min, max, major, minor) {
 	this._titleOffset = 0; // The offset for positioning the title
 	this._labels = null; // List of labels for this axis - one per possible value across all series
 	this._labelFormat = {}; // Formatting settings for the labels
-	this._lineFormat = {stroke: 'black', 'stroke-width': 1}; // Formatting settings for the axis lines
+	this._lineFormat = {stroke: 'black', strokeWidth: 1}; // Formatting settings for the axis lines
 	this._ticks = {major: major || 10, minor: minor || 0, size: 10, position: 'out'}; // Tick mark options
 	this._scale = {min: min || 0, max: max || 100}; // Axis scale settings
 	this._crossAt = 0; // Where this axis crosses the other one
@@ -781,7 +781,7 @@ $.extend(SVGGraphAxis.prototype, {
 			width = null;
 		}
 		$.extend(this._lineFormat, {stroke: colour},
-			(width ? {'stroke-width': width} : {}), settings || {});
+			(width ? {strokeWidth: width} : {}), settings || {});
 		this._graph._drawGraph();
 		return this;
 	},
@@ -915,7 +915,7 @@ $.extend(SVGColumnChart.prototype, {
 		var dims = graph._getDims();
 		var xScale = dims[graph.W] / ((numSer * barWidth + barGap) * numVal + barGap);
 		var yScale = dims[graph.H] / (graph.yAxis._scale.max - graph.yAxis._scale.min);
-		this._chart = graph._wrapper.group(graph._chartCont, {'class': 'chart'});
+		this._chart = graph._wrapper.group(graph._chartCont, {class_: 'chart'});
 		for (var i = 0; i < numSer; i++) {
 			this._drawSeries(graph, i, numSer, barWidth, barGap, dims, xScale, yScale);
 		}
@@ -929,8 +929,8 @@ $.extend(SVGColumnChart.prototype, {
 	_drawSeries: function(graph, cur, numSer, barWidth, barGap, dims, xScale, yScale) {
 		var series = graph._series[cur];
 		var g = graph._wrapper.group(this._chart,
-			$.extend({'class': 'series' + cur, fill: series._fill, stroke: series._stroke,
-			'stroke-width': series._strokeWidth}, series._settings || {}));
+			$.extend({class_: 'series' + cur, fill: series._fill, stroke: series._stroke,
+			strokeWidth: series._strokeWidth}, series._settings || {}));
 		for (var i = 0; i < series._values.length; i++) {
 			graph._wrapper.rect(g,
 				dims[graph.X] + xScale * (barGap + i * (numSer * barWidth + barGap) + (cur * barWidth)),
@@ -946,11 +946,11 @@ $.extend(SVGColumnChart.prototype, {
 		if (axis._title) {
 			graph._wrapper.text(graph._chartCont, dims[graph.X] + dims[graph.W] / 2,
 				dims[graph.Y] + dims[graph.H] + axis._titleOffset,
-				axis._title, {'text-anchor': 'middle'});
+				axis._title, {textAnchor: 'middle'});
 		}
-		var gl = graph._wrapper.group(graph._chartCont, $.extend({'class': 'xAxis'}, axis._lineFormat));
-		var gt = graph._wrapper.group(graph._chartCont, $.extend({'class': 'xAxisLabels',
-			'text-anchor': 'middle'}, axis._labelFormat));
+		var gl = graph._wrapper.group(graph._chartCont, $.extend({class_: 'xAxis'}, axis._lineFormat));
+		var gt = graph._wrapper.group(graph._chartCont, $.extend({class_: 'xAxisLabels',
+			textAnchor: 'middle'}, axis._labelFormat));
 		graph._wrapper.line(gl, dims[graph.X], dims[graph.Y] + dims[graph.H],
 			dims[graph.X] + dims[graph.W], dims[graph.Y] + dims[graph.H]);
 		if (axis._ticks.major) {
@@ -1010,11 +1010,11 @@ $.extend(SVGStackedColumnChart.prototype, {
 		var numVal = (numSer ? (graph._series[0])._values.length : 0);
 		var xScale = dims[graph.W] / ((barWidth + barGap) * numVal + barGap);
 		var yScale = dims[graph.H];
-		this._chart = graph._wrapper.group(graph._chartCont, {'class': 'chart'});
+		this._chart = graph._wrapper.group(graph._chartCont, {class_: 'chart'});
 		this._drawColumns(graph, numSer, numVal, barWidth, barGap, dims, xScale, yScale);
 		graph._drawTitle();
 		graph._wrapper.text(graph._chartCont, 0, 0, $.svg.graphing.region.percentageText,
-			{'text-anchor': 'middle', transform: 'translate(' + (dims[graph.X] - graph.yAxis._titleOffset) +
+			{textAnchor: 'middle', transform: 'translate(' + (dims[graph.X] - graph.yAxis._titleOffset) +
 			',' +(dims[graph.Y] + dims[graph.H] / 2) + ') rotate(-90)'});
 		graph._drawAxis(graph._getPercentageAxis(), 'yAxis',
 			dims[graph.X], dims[graph.Y], dims[graph.X], dims[graph.Y] + dims[graph.H]);
@@ -1032,8 +1032,8 @@ $.extend(SVGStackedColumnChart.prototype, {
 		for (var s = 0; s < numSer; s++) {
 			var series = graph._series[s];
 			var g = graph._wrapper.group(this._chart,
-				$.extend({'class': 'series' + s, fill: series._fill,
-				stroke: series._stroke, 'stroke-width': series._strokeWidth},
+				$.extend({class_: 'series' + s, fill: series._fill,
+				stroke: series._stroke, strokeWidth: series._strokeWidth},
 				series._settings || {}));
 			for (var i = 0; i < series._values.length; i++) {
 				accum[i] += series._values[i];
@@ -1053,11 +1053,11 @@ $.extend(SVGStackedColumnChart.prototype, {
 		if (axis._title) {
 			graph._wrapper.text(graph._chartCont, dims[graph.X] + dims[graph.W] / 2,
 				dims[graph.Y] + dims[graph.H] + axis._titleOffset,
-				axis._title, {'text-anchor': 'middle'});
+				axis._title, {textAnchor: 'middle'});
 		}
-		var gl = graph._wrapper.group(graph._chartCont, $.extend({'class': 'xAxis'}, axis._lineFormat));
-		var gt = graph._wrapper.group(graph._chartCont, $.extend({'class': 'xAxisLabels',
-			'text-anchor': 'middle'}, axis._labelFormat));
+		var gl = graph._wrapper.group(graph._chartCont, $.extend({class_: 'xAxis'}, axis._lineFormat));
+		var gt = graph._wrapper.group(graph._chartCont, $.extend({class_: 'xAxisLabels',
+			textAnchor: 'middle'}, axis._labelFormat));
 		graph._wrapper.line(gl, dims[graph.X], dims[graph.Y] + dims[graph.H],
 		dims[graph.X] + dims[graph.W], dims[graph.Y] + dims[graph.H]);
 		if (axis._ticks.major) {
@@ -1114,7 +1114,7 @@ $.extend(SVGRowChart.prototype, {
 		var numVal = (numSer ? (graph._series[0])._values.length : 0);
 		var xScale = dims[graph.W] / (graph.yAxis._scale.max - graph.yAxis._scale.min);
 		var yScale = dims[graph.H] / ((numSer * barWidth + barGap) * numVal + barGap);
-		this._chart = graph._wrapper.group(graph._chartCont, {'class': 'chart'});
+		this._chart = graph._wrapper.group(graph._chartCont, {class_: 'chart'});
 		for (var i = 0; i < numSer; i++) {
 			this._drawSeries(graph, i, numSer, barWidth, barGap, dims, xScale, yScale);
 		}
@@ -1127,8 +1127,8 @@ $.extend(SVGRowChart.prototype, {
 	_drawSeries: function(graph, cur, numSer, barWidth, barGap, dims, xScale, yScale) {
 		var series = graph._series[cur];
 		var g = graph._wrapper.group(this._chart,
-			$.extend({'class': 'series' + cur, fill: series._fill,
-			stroke: series._stroke, 'stroke-width': series._strokeWidth},
+			$.extend({class_: 'series' + cur, fill: series._fill,
+			stroke: series._stroke, strokeWidth: series._strokeWidth},
 			series._settings || {}));
 		for (var i = 0; i < series._values.length; i++) {
 			graph._wrapper.rect(g,
@@ -1154,13 +1154,13 @@ $.extend(SVGRowChart.prototype, {
 		// Y-axis
 		var axis = graph.xAxis;
 		if (axis._title) {
-			graph._wrapper.text(graph._chartCont, 0, 0, axis._title, {'text-anchor': 'middle',
+			graph._wrapper.text(graph._chartCont, 0, 0, axis._title, {textAnchor: 'middle',
 				transform: 'translate(' + (dims[graph.X] - axis._titleOffset) + ',' +
 				(dims[graph.Y] + dims[graph.H] / 2) + ') rotate(-90)'});
 		}
-		var gl = graph._wrapper.group(graph._chartCont, $.extend({'class': 'yAxis'}, axis._lineFormat));
+		var gl = graph._wrapper.group(graph._chartCont, $.extend({class_: 'yAxis'}, axis._lineFormat));
 		var gt = graph._wrapper.group(graph._chartCont, $.extend(
-			{'class': 'yAxisLabels', 'text-anchor': 'end'}, axis._labelFormat));
+			{class_: 'yAxisLabels', textAnchor: 'end'}, axis._labelFormat));
 		graph._wrapper.line(gl, dims[graph.X], dims[graph.Y], dims[graph.X], dims[graph.Y] + dims[graph.H]);
 		if (axis._ticks.major) {
 			var offsets = graph._getTickOffsets(axis, false);
@@ -1219,12 +1219,12 @@ $.extend(SVGStackedRowChart.prototype, {
 		var numVal = (numSer ? (graph._series[0])._values.length : 0);
 		var xScale = dims[graph.W];
 		var yScale = dims[graph.H] / ((barWidth + barGap) * numVal + barGap);
-		this._chart = graph._wrapper.group(graph._chartCont, {'class': 'chart'});
+		this._chart = graph._wrapper.group(graph._chartCont, {class_: 'chart'});
 		this._drawRows(graph, numSer, numVal, barWidth, barGap, dims, xScale, yScale);
 		graph._drawTitle();
 		graph._wrapper.text(graph._chartCont, dims[graph.X] + dims[graph.W] / 2,
 			dims[graph.Y] + dims[graph.H] + graph.xAxis._titleOffset,
-			$.svg.graphing.region.percentageText, {'text-anchor': 'middle'});
+			$.svg.graphing.region.percentageText, {textAnchor: 'middle'});
 		graph._drawAxis(graph._getPercentageAxis(), 'xAxis',
 			dims[graph.X], dims[graph.Y] + dims[graph.H],
 			dims[graph.X] + dims[graph.W], dims[graph.Y] + dims[graph.H]);
@@ -1242,8 +1242,8 @@ $.extend(SVGStackedRowChart.prototype, {
 		for (var s = 0; s < numSer; s++) {
 			var series = graph._series[s];
 			var g = graph._wrapper.group(this._chart,
-				$.extend({'class': 'series' + s, fill: series._fill,
-				stroke: series._stroke, 'stroke-width': series._strokeWidth},
+				$.extend({class_: 'series' + s, fill: series._fill,
+				stroke: series._stroke, strokeWidth: series._strokeWidth},
 				series._settings || {}));
 			for (var i = 0; i < series._values.length; i++) {
 				graph._wrapper.rect(g,
@@ -1261,14 +1261,14 @@ $.extend(SVGStackedRowChart.prototype, {
 	_drawYAxis: function(graph, numVal, barWidth, barGap, dims, yScale) {
 		var axis = graph.xAxis;
 		if (axis._title) {
-			graph._wrapper.text(graph._chartCont, 0, 0, axis._title, {'text-anchor': 'middle',
+			graph._wrapper.text(graph._chartCont, 0, 0, axis._title, {textAnchor: 'middle',
 				transform: 'translate(' + (dims[graph.X] - axis._titleOffset) + ',' +
 				(dims[graph.Y] + dims[graph.H] / 2) + ') rotate(-90)'});
 		}
 		var gl = graph._wrapper.group(graph._chartCont,
-			$.extend({'class': 'yAxis'}, axis._lineFormat));
+			$.extend({class_: 'yAxis'}, axis._lineFormat));
 		var gt = graph._wrapper.group(graph._chartCont,
-			$.extend({'class': 'yAxisLabels', 'text-anchor': 'end'}, axis._labelFormat));
+			$.extend({class_: 'yAxisLabels', textAnchor: 'end'}, axis._labelFormat));
 		graph._wrapper.line(gl, dims[graph.X], dims[graph.Y],
 			dims[graph.X], dims[graph.Y] + dims[graph.H]);
 		if (axis._ticks.major) {
@@ -1320,7 +1320,7 @@ $.extend(SVGLineChart.prototype, {
 		var dims = graph._getDims();
 		var xScale = dims[graph.W] / (graph.xAxis._scale.max - graph.xAxis._scale.min);
 		var yScale = dims[graph.H] / (graph.yAxis._scale.max - graph.yAxis._scale.min);
-		this._chart = graph._wrapper.group(graph._chartCont, {'class': 'chart'});
+		this._chart = graph._wrapper.group(graph._chartCont, {class_: 'chart'});
 		for (var i = 0; i < graph._series.length; i++) {
 			this._drawSeries(graph, i, dims, xScale, yScale);
 		}
@@ -1345,7 +1345,7 @@ $.extend(SVGLineChart.prototype, {
 		}
 		graph._wrapper.path(this._chart, path,
 			$.extend({id: 'series' + cur, fill: 'none', stroke: series._stroke,
-			'stroke-width': series._strokeWidth}, graph._showStatus(series._name),
+			strokeWidth: series._strokeWidth}, graph._showStatus(series._name),
 			series._settings || {}));
 	}
 });
@@ -1384,7 +1384,7 @@ $.extend(SVGPieChart.prototype, {
 	   @param  graph  (object) the SVGGraph object */
 	drawGraph: function(graph) {
 		graph._drawChartBackground(true, true);
-		this._chart = graph._wrapper.group(graph._chartCont, {'class': 'chart'});
+		this._chart = graph._wrapper.group(graph._chartCont, {class_: 'chart'});
 		var dims = graph._getDims();
 		this._drawSeries(graph, dims);
 		graph._drawTitle();
@@ -1404,7 +1404,7 @@ $.extend(SVGPieChart.prototype, {
 		var yBase = dims[graph.H] / 2;
 		var radius = Math.min(xBase, yBase) - (explode.length > 0 ? explodeDist : 0);
 		var gt = graph._wrapper.group(graph._chartCont, $.extend(
-			{'class': 'xAxisLabels', 'text-anchor': 'middle'}, graph.xAxis._labelFormat));
+			{class_: 'xAxisLabels', textAnchor: 'middle'}, graph.xAxis._labelFormat));
 		var gl = [];
 		for (var i = 0; i < numVal; i++) {
 			var cx = dims[graph.X] + xBase + (i * (2 * Math.min(xBase, yBase) + pieGap)) + pieGap;
@@ -1413,9 +1413,9 @@ $.extend(SVGPieChart.prototype, {
 			for (var j = 0; j < numSer; j++) {
 				var series = graph._series[j];
 				if (i == 0) {
-					gl[j] = graph._wrapper.group(this._chart, $.extend({'class': 'series' + j,
+					gl[j] = graph._wrapper.group(this._chart, $.extend({class_: 'series' + j,
 						fill: series._fill, stroke: series._stroke,
-						'stroke-width': series._strokeWidth}, series._settings || {}));
+						strokeWidth: series._strokeWidth}, series._settings || {}));
 				}
 				if (series._values[i] == 0) {
 					continue;
