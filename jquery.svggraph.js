@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG graphing extension for jQuery v1.1.0.
+   SVG graphing extension for jQuery v1.1.1.
    Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 

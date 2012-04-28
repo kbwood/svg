@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery v1.1.0.
+   SVG for jQuery v1.1.1.
    Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -676,7 +676,8 @@ $.extend(SVGRoot.prototype, {
 	   @param  parent  element - the parent node for the new node
 	   @param  node    element - the new node to add or
 	                   string - the jQuery selector for the node or
-	                   jQuery collection - set of nodes to add */
+	                   jQuery collection - set of nodes to add
+	   @return  this root */
 	add: function(parent, node) {
 		var svg = this;
 		parent = parent || this._svg;
@@ -687,6 +688,7 @@ $.extend(SVGRoot.prototype, {
 				parent.appendChild(child);
 			}
 		});
+		return this;
 	},
 	
 	/* SVG nodes must belong to the SVG namespace, so clone and ensure this is so. */
@@ -734,20 +736,45 @@ $.extend(SVGRoot.prototype, {
 
 	/* Load an external SVG document.
 	   @param  url    string - the location of the SVG document
-	   @param  addTo  boolean - true to add to what's already there, or false to clear the canvas first */
-	load: function(url, addTo) {
-		if (!addTo) {
-			this.clear(true);
+	   @param  settings  boolean - see addTo below or
+	                     object - additional settings for the load with attributes below:
+	                       addTo       boolean - true to add to what's already there,
+	                                   or false to clear the canvas first
+						   changeSize  boolean - true to allow the canvas size to change,
+	                                   or false to retain the original
+	                       onLoad      function - callback after the document has loaded,
+	                                   'this' is the container, receives SVG object and
+	                                   optional error message as a parameter
+	   @return  this root */
+	load: function(url, settings) {
+		if (typeof settings == 'boolean') {
+			settings = {addTo: settings};
 		}
-		var root = this;
-		var http = $.ajax({url: url, dataType: 'xml', success: function(data) {
+		else {
+			settings = settings || {};
+		}
+		if (!settings.addTo) {
+			this.clear(false);
+		}
+		var size = [this._svg.getAttribute('width'), this._svg.getAttribute('height')];
+		var wrapper = this;
+		var http = $.ajax({url: url, dataType: ($.browser.msie ? 'text' : 'xml'), success: function(data) {
 			if ($.browser.msie) { // Doesn't load properly!
-				data.loadXML(http.responseText);
-				if (data.parseError.errorCode != 0) {
-					root.text(null, 10, 20, $.svg.local.errorLoadingText + ': ' +
-						data.parseError.reason);
+				var xml = new ActiveXObject('Microsoft.XMLDOM');
+				xml.validateOnParse = false;
+				xml.resolveExternals = false;
+				xml.loadXML(data);
+				if (xml.parseError.errorCode != 0) {
+					var message = $.svg.local.errorLoadingText + ': ' + xml.parseError.reason;
+					if (settings.onLoad) {
+						settings.onLoad.apply(wrapper._container, [wrapper, message]);
+					}
+					else {
+						wrapper.text(null, 10, 20, message);
+					}
 					return;
 				}
+				data = xml;
 			}
 			var attrs = {};
 			for (var i = 0; i < data.documentElement.attributes.length; i++) {
@@ -756,26 +783,41 @@ $.extend(SVGRoot.prototype, {
 					attrs[attr.nodeName] = attr.nodeValue;
 				}
 			}
-			root.configure(attrs, true);
+			wrapper.configure(attrs, true);
 			var nodes = data.documentElement.childNodes;
 			for (var i = 0; i < nodes.length; i++) {
-				root.add(null, nodes[i]);
+				wrapper.add(null, nodes[i]);
+			}
+			if (!settings.changeSize) {
+				wrapper.configure({width: size[0], height: size[1]});
+			}
+			if (settings.onLoad) {
+				settings.onLoad.apply(wrapper._container, [wrapper]);
 			}
 		}, error: function(http, message, exc) {
-			root.text(null, 10, 20, $.svg.local.errorLoadingText + ': ' +
-				message + (exc ? ' ' + exc.message : ''));
+			message = $.svg.local.errorLoadingText + ': ' + message + (exc ? ' ' + exc.message : '');
+			if (settings.onLoad) {
+				settings.onLoad.apply(wrapper._container, [wrapper, message]);
+			}
+			else {
+				wrapper.text(null, 10, 20, message);
+			}
 		}});
+		return this;
 	},
 
 	/* Delete a specified node.
-	   @param  node  element - the drawing node to remove */
+	   @param  node  element - the drawing node to remove
+	   @return  this root */
 	remove: function(node) {
 		node.parentNode.removeChild(node);
+		return this;
 	},
 
 	/* Delete everything in the current document.
 	   @param  attrsToo  boolean - true to clear any root attributes as well,
-	                     false to leave them (optional) */
+	                     false to leave them (optional)
+	   @return  this root */
 	clear: function(attrsToo) {
 		if (attrsToo) {
 			this.configure({}, true);
@@ -783,6 +825,7 @@ $.extend(SVGRoot.prototype, {
 		while (this._svg.firstChild) {
 			this._svg.removeChild(this._svg.firstChild);
 		}
+		return this;
 	},
 	
 	/* Serialise the current diagram into an SVG text document.
