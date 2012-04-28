@@ -1,8 +1,8 @@
 /* http://keith-wood.name/svg.html
-   SVG graphing extension for jQuery v1.2.1.
+   SVG graphing extension for jQuery v1.3.0.
    Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
-   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
-   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
+   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
+   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
    Please attribute the author if you use it. */
 
 (function($) { // Hide scope, no $ conflict
@@ -20,28 +20,28 @@ function SVGGraphing() {
 
 $.extend(SVGGraphing.prototype, {
 	_chartTypes: [],
-	
+
 	/* Add a new chart rendering type to the package.
 	   The rendering object must implement the following functions:
 	   getTitle(), getDescription(), getOptions(), drawChart(graph).
-	   @param  id         string - the ID of this graph renderer
-	   @param  chartType  object - the object implementing this chart type */
+	   @param  id         (string) the ID of this graph renderer
+	   @param  chartType  (object) the object implementing this chart type */
 	addChartType: function(id, chartType) {
 		this._chartTypes[id] = chartType;
 	},
-	
+
 	/* Retrieve the list of chart types.
-	   @return  object[string] - the array of chart types indexed by ID */
+	   @return  (object[string]) the array of chart types indexed by ID */
 	chartTypes: function() {
 		return this._chartTypes;
 	}
 });
 
 /* Extension point for SVG graphing.
-   Access through svg.filters. */
+   Access through svg.graph. */
 function SVGGraph(wrapper) {
 	this._wrapper = wrapper; // The attached SVG wrapper object
-	this._drawNow = true; // True for immediate update, false to wait for redraw call
+	this._drawNow = false; // True for immediate update, false to wait for redraw call
 	for (var id in $.svg.graphing._chartTypes) {
 		this._chartType = $.svg.graphing._chartTypes[id]; // Use first graph renderer
 		break;
@@ -49,7 +49,7 @@ function SVGGraph(wrapper) {
 	this._chartOptions = {}; // Extra options for the graph type
 	// The graph title and settings
 	this._title = {value: '', offset: 25, settings: {'text-anchor': 'middle'}};
-	this._area = [0.1, 0.1, 0.8, 0.9]; // The chart area: left, top, right, bottom, 
+	this._area = [0.1, 0.1, 0.8, 0.9]; // The chart area: left, top, right, bottom,
 		// > 1 in pixels, <= 1 as proportion
 	this._chartFormat = {fill: 'none', stroke: 'black'}; // The formatting for the chart area
 	this._gridlines = []; // The formatting of the x- and y-gridlines
@@ -57,13 +57,14 @@ function SVGGraph(wrapper) {
 	this._onstatus = null; // The callback function for status updates
 	this._chartGroup = this._wrapper.group('_graph'); // The main group for the graph
 	
-	this.xAxis = new SVGGraphAxis(); // The main x-axis
+	this.xAxis = new SVGGraphAxis(this); // The main x-axis
 	this.xAxis.title('', 40);
-	this.yAxis = new SVGGraphAxis(); // The main y-axis
+	this.yAxis = new SVGGraphAxis(this); // The main y-axis
 	this.yAxis.title('', 40);
 	this.x2Axis = null; // The secondary x-axis
 	this.y2Axis = null; // The secondary y-axis
-	this.legend = new SVGGraphLegend(); // The chart legend
+	this.legend = new SVGGraphLegend(this); // The chart legend
+	this._drawNow = true;
 }
 
 $.extend(SVGGraph.prototype, {
@@ -77,17 +78,31 @@ $.extend(SVGGraph.prototype, {
 	T: 1,
 	R: 2,
 	B: 3,
-	
+
 	/* Standard percentage axis. */
-	_percentageAxis: new SVGGraphAxis($.svg.graphing.region.percentageText, 0, 100, 10, 0),
+	_percentageAxis: new SVGGraphAxis(this, $.svg.graphing.region.percentageText, 0, 100, 10, 0),
 
 	/* Set or retrieve the type of chart to be rendered.
 	   See $.svg.graphing.getChartTypes() for the list of available types.
-	   @param  id       string - the ID of the chart type
-	   @param  options  object - additional settings for this chart type (optional)
-	   @return  SVGGraph - this graph object or 
-	            string - the chart type (if no parameters) */
+	   @param  id       (string) the ID of the chart type
+	   @param  options  (object) additional settings for this chart type (optional)
+	   @return  (SVGGraph) this graph object or
+	            (string) the chart type (if no parameters)
+	   @deprecated  use type() */
 	chartType: function(id, options) {
+		if (arguments.length == 0) {
+			return this.type();
+		}
+		return this.type(id, options);
+	},
+
+	/* Set or retrieve the type of chart to be rendered.
+	   See $.svg.graphing.getChartTypes() for the list of available types.
+	   @param  id       (string) the ID of the chart type
+	   @param  options  (object) additional settings for this chart type (optional)
+	   @return  (SVGGraph) this graph object or
+	            (string) the chart type (if no parameters) */
+	type: function(id, options) {
 		if (arguments.length == 0) {
 			return this._chartType;
 		}
@@ -99,12 +114,24 @@ $.extend(SVGGraph.prototype, {
 		this._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve additional options for the particular chart type.
-	   @param  options  object - the extra options
-	   @return  SVGGraph - this graph object or
-	            object - the chart options (if no parameters) */
+	   @param  options  (object) the extra options
+	   @return  (SVGGraph) this graph object or
+	            (object) the chart options (if no parameters)
+	   @deprecated  use options() */
 	chartOptions: function(options) {
+		if (arguments.length == 0) {
+			return this.options();
+		}
+		return this.options(options);
+	},
+
+	/* Set or retrieve additional options for the particular chart type.
+	   @param  options  (object) the extra options
+	   @return  (SVGGraph) this graph object or
+	            (object) the chart options (if no parameters) */
+	options: function(options) {
 		if (arguments.length == 0) {
 			return this._chartOptions;
 		}
@@ -112,14 +139,28 @@ $.extend(SVGGraph.prototype, {
 		this._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve the background of the graph chart.
-	   @param  fill      string - how to fill the chart background
-	   @param  stroke    string - the colour of the outline (optional)
-	   @param  settings  object - additional formatting for the chart background (optional)
-	   @return  SVGGraph - this graph object or
-	            object - the chart format (if no parameters) */
+	   @param  fill      (string) how to fill the chart background
+	   @param  stroke    (string) the colour of the outline (optional)
+	   @param  settings  (object) additional formatting for the chart background (optional)
+	   @return  (SVGGraph) this graph object or
+	            (object) the chart format (if no parameters)
+	   @deprecated  use format() */
 	chartFormat: function(fill, stroke, settings) {
+		if (arguments.length == 0) {
+			return this.format();
+		}
+		return this.format(fill, stroke, settings);
+	},
+
+	/* Set or retrieve the background of the graph chart.
+	   @param  fill      (string) how to fill the chart background
+	   @param  stroke    (string) the colour of the outline (optional)
+	   @param  settings  (object) additional formatting for the chart background (optional)
+	   @return  (SVGGraph) this graph object or
+	            (object) the chart format (if no parameters) */
+	format: function(fill, stroke, settings) {
 		if (arguments.length == 0) {
 			return this._chartFormat;
 		}
@@ -127,21 +168,37 @@ $.extend(SVGGraph.prototype, {
 			settings = stroke;
 			stroke = null;
 		}
-		this._chartFormat = $.extend($.extend({fill: fill},
-			(stroke ? {stroke: stroke} : {})), settings || {});
+		this._chartFormat = $.extend({fill: fill},
+			(stroke ? {stroke: stroke} : {}), settings || {});
 		this._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve the main chart area.
-	   @param  left    number - > 1 is pixels, <= 1 is proportion of width or
-	                   number[4] - for left, top, right, bottom
-	   @param  top     number - > 1 is pixels, <= 1 is proportion of height
-	   @param  right   number - > 1 is pixels, <= 1 is proportion of width
-	   @param  bottom  number - > 1 is pixels, <= 1 is proportion of height
-	   @return  SVGGraph - this graph object or
-	            number[4] - the chart area: left, top, right, bottom (if no parameters) */
+	   @param  left    (number) > 1 is pixels, <= 1 is proportion of width or
+	                   (number[4]) for left, top, right, bottom
+	   @param  top     (number) > 1 is pixels, <= 1 is proportion of height
+	   @param  right   (number) > 1 is pixels, <= 1 is proportion of width
+	   @param  bottom  (number) > 1 is pixels, <= 1 is proportion of height
+	   @return  (SVGGraph) this graph object or
+	            (number[4]) the chart area: left, top, right, bottom (if no parameters)
+	   @deprecated use area() */
 	chartArea: function(left, top, right, bottom) {
+		if (arguments.length == 0) {
+			return this.area();
+		}
+		return this.area(left, top, right, bottom);
+	},
+
+	/* Set or retrieve the main chart area.
+	   @param  left    (number) > 1 is pixels, <= 1 is proportion of width or
+	                   (number[4]) for left, top, right, bottom
+	   @param  top     (number) > 1 is pixels, <= 1 is proportion of height
+	   @param  right   (number) > 1 is pixels, <= 1 is proportion of width
+	   @param  bottom  (number) > 1 is pixels, <= 1 is proportion of height
+	   @return  (SVGGraph) this graph object or
+	            (number[4]) the chart area: left, top, right, bottom (if no parameters) */
+	area: function(left, top, right, bottom) {
 		if (arguments.length == 0) {
 			return this._area;
 		}
@@ -149,33 +206,36 @@ $.extend(SVGGraph.prototype, {
 		this._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve the gridlines formatting for the graph chart.
-	   @param  xSettings  string - the colour of the gridlines along the x-axis, or
-	                      object - formatting for the gridlines along the x-axis, or
-						  null for none
-	   @param  ySettings  string - the colour of the gridlines along the y-axis, or
-	                      object - formatting for the gridlines along the y-axis, or
-						  null for none
-	   @return  SVGGraph - this graph object or
-	            object[2] - the gridlines formatting (if no parameters) */
+	   @param  xSettings  (string) the colour of the gridlines along the x-axis, or
+	                      (object) formatting for the gridlines along the x-axis, or
+	                      null for none
+	   @param  ySettings  (string) the colour of the gridlines along the y-axis, or
+	                      (object) formatting for the gridlines along the y-axis, or
+	                      null for none
+	   @return  (SVGGraph) this graph object or
+	            (object[2]) the gridlines formatting (if no parameters) */
 	gridlines: function(xSettings, ySettings) {
 		if (arguments.length == 0) {
 			return this._gridlines;
 		}
 		this._gridlines = [(typeof xSettings == 'string' ? {stroke: xSettings} : xSettings),
 			(typeof ySettings == 'string' ? {stroke: ySettings} : ySettings)];
+		if (this._gridlines[0] == null && this._gridlines[1] == null) {
+			this._gridlines = [];
+		}
 		this._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve the title of the graph and its formatting.
-	   @param  value     string - the title
-	   @param  offset    number - the vertical positioning of the title
+	   @param  value     (string) the title
+	   @param  offset    (number) the vertical positioning of the title
                           > 1 is pixels, <= 1 is proportion of width (optional)
-	   @param  settings  object - formatting for the title (optional)
-	   @return  SVGGraph - this graph object or
-	            object - value, offset, and settings for the title (if no parameters) */
+	   @param  settings  (object) formatting for the title (optional)
+	   @return  (SVGGraph) this graph object or
+	            (object) value, offset, and settings for the title (if no parameters) */
 	title: function(value, offset, settings) {
 		if (arguments.length == 0) {
 			return this._title;
@@ -189,55 +249,53 @@ $.extend(SVGGraph.prototype, {
 		this._drawGraph();
 		return this;
 	},
-	
+
 	/* Add a series of values to be plotted on the graph.
-	   @param  name         string - the name of this series
-	   @param  values       number[] - the values to be plotted
-	   @param  fill         string - how the plotted values are filled
-	   @param  stroke       string - the colour of the plotted lines
-	   @param  strokeWidth  number - the width of the plotted lines (optional)
-	   @param  settings     object - additional settings for the plotted values (optional)
-	   @return  SVGGraph - this graph object */
+	   @param  name         (string) the name of this series (optional)
+	   @param  values       (number[]) the values to be plotted
+	   @param  fill         (string) how the plotted values are filled
+	   @param  stroke       (string) the colour of the plotted lines (optional)
+	   @param  strokeWidth  (number) the width of the plotted lines (optional)
+	   @param  settings     (object) additional settings for the plotted values (optional)
+	   @return  (SVGGraph) this graph object */
 	addSeries: function(name, values, fill, stroke, strokeWidth, settings) {
-		if (typeof strokeWidth == 'object') {
-			settings = strokeWidth;
-			strokeWidth = null;
-		}
-		this._series[this._series.length] = 
-			new SVGGraphSeries(name, values, fill, stroke, strokeWidth, settings || {});
+		this._series.push(new SVGGraphSeries(
+			this, name, values, fill, stroke, strokeWidth, settings));
 		this._drawGraph();
 		return this;
 	},
-	
+
 	/* Retrieve the series wrappers.
-	   @return  SVGGraphSeries[] - the list of series */
-	series: function() {
-		return this._series;
+	   @param  i  (number) the series index (optional)
+	   @return  (SVGGraphSeries) the specified series or
+	            (SVGGraphSeries[]) the list of series */
+	series: function(i) {
+		return (arguments.length > 0 ? this._series[i] : null) || this._series;
 	},
-	
+
 	/* Suppress drawing of the graph until redraw() is called.
-	   @return  SVGGraph - this graph object */
+	   @return  (SVGGraph) this graph object */
 	noDraw: function() {
 		this._drawNow = false;
 		return this;
 	},
-	
+
 	/* Redraw the entire graph with the current settings and values.
-	   @return  SVGGraph - this graph object */
+	   @return  (SVGGraph) this graph object */
 	redraw: function() {
 		this._drawNow = true;
 		this._drawGraph();
 		return this;
 	},
-	
+
 	/* Set the callback function for status updates.
-	   @param  onstatus  function - the callback function
-	   @return  SVGGraph - this graph object */
+	   @param  onstatus  (function) the callback function
+	   @return  (SVGGraph) this graph object */
 	status: function(onstatus) {
 		this._onstatus = onstatus;
 		return this;
 	},
-	
+
 	/* Actually draw the graph (if allowed) based on the graph type set. */
 	_drawGraph: function() {
 		if (!this._drawNow) {
@@ -257,10 +315,10 @@ $.extend(SVGGraph.prototype, {
 		this._wrapper.text(this._chartGroup, this._wrapper._width() / 2, this._title.offset,
 			this._title.value, this._title.settings);
 	},
-	
+
 	/* Calculate the actual dimensions of the chart area.
-	    @param  area  number[4] - the area values to evaluate (optional)
-		@return  an array of dimension values: left, top, width, height */
+	   @param  area  (number[4]) the area values to evaluate (optional)
+	   @return  (number[4]) an array of dimension values: left, top, width, height */
 	_getDims: function(area) {
 		area = area || this._area;
 		var left = (area[this.L] > 1 ? area[this.L] :
@@ -273,11 +331,11 @@ $.extend(SVGGraph.prototype, {
 			this._wrapper._height() * area[this.B]) - top;
 		return [left, top, width, height];
 	},
-	
+
 	/* Draw the chart background, including gridlines.
-	   @param  noXGrid  boolean - true to suppress the x-gridlines, false to draw them (optional)
-	   @param  noYGrid  boolean - true to suppress the y-gridlines, false to draw them (optional)
-	   @return  the background group element */
+	   @param  noXGrid  (boolean) true to suppress the x-gridlines, false to draw them (optional)
+	   @param  noYGrid  (boolean) true to suppress the y-gridlines, false to draw them (optional)
+	   @return  (element) the background group element */
 	_drawChartBackground: function(noXGrid, noYGrid) {
 		var bg = this._wrapper.group(this._chartGroup, 'background');
 		var dims = this._getDims();
@@ -290,13 +348,13 @@ $.extend(SVGGraph.prototype, {
 		}
 		return bg;
 	},
-	
+
 	/* Draw one set of gridlines.
-	   @param  bg      element - the background group element
-	   @param  axis    SVGGraphAxis - the axis definition
-	   @param  horiz   boolean - true if horizontal, false if vertical
-	   @param  dims    number[] - the left, top, width, height of the chart area
-	   @param  format  object - additional settings for the gridlines */
+	   @param  bg      (element) the background group element
+	   @param  axis    (SVGGraphAxis) the axis definition
+	   @param  horiz   (boolean) true if horizontal, false if vertical
+	   @param  dims    (number[]) the left, top, width, height of the chart area
+	   @param  format  (object) additional settings for the gridlines */
 	_drawGridlines: function(bg, axis, horiz, dims, format) {
 		var g = this._wrapper.group(bg, format);
 		var scale = (horiz ? dims[this.H] : dims[this.W]) / (axis._scale.max - axis._scale.min);
@@ -305,14 +363,14 @@ $.extend(SVGGraph.prototype, {
 		while (major <= axis._scale.max) {
 			var v = (horiz ? axis._scale.max - major : major - axis._scale.min) * scale +
 				(horiz ? dims[this.Y] : dims[this.X]);
-			this._wrapper.line(g, (horiz ? dims[this.X] : v), (horiz ? v : dims[this.Y]), 
+			this._wrapper.line(g, (horiz ? dims[this.X] : v), (horiz ? v : dims[this.Y]),
 				(horiz ? dims[this.X] + dims[this.W] : v), (horiz ? v : dims[this.Y] + dims[this.H]));
 			major += axis._ticks.major;
 		}
 	},
-	
+
 	/* Draw the axes in their standard configuration.
-	   @param  noX  boolean - true to suppress the x-axes, false to draw it (optional) */
+	   @param  noX  (boolean) true to suppress the x-axes, false to draw it (optional) */
 	_drawAxes: function(noX) {
 		var dims = this._getDims();
 		if (this.xAxis && !noX) {
@@ -350,14 +408,14 @@ $.extend(SVGGraph.prototype, {
 				dims[this.X] + dims[this.W], dims[this.Y] + dims[this.H]);
 		}
 	},
-	
+
 	/* Draw an axis and its tick marks.
-	   @param  axis  SVGGraphAxis - the axis definition
-	   @param  id    string - the identifier for the axis group element
-	   @param  x1    number - starting x-coodinate for the axis
-	   @param  y1    number - starting y-coodinate for the axis
-	   @param  x2    number - ending x-coodinate for the axis
-	   @param  y2    number - ending y-coodinate for the axis */
+	   @param  axis  (SVGGraphAxis) the axis definition
+	   @param  id    (string) the identifier for the axis group element
+	   @param  x1    (number) starting x-coodinate for the axis
+	   @param  y1    (number) starting y-coodinate for the axis
+	   @param  x2    (number) ending x-coodinate for the axis
+	   @param  y2    (number) ending y-coodinate for the axis */
 	_drawAxis: function(axis, id, x1, y1, x2, y2) {
 		var horiz = (y1 == y2);
 		var gl = this._wrapper.group(this._chartGroup, id, axis._lineFormat);
@@ -365,7 +423,7 @@ $.extend(SVGGraph.prototype, {
 			$.extend({'text-anchor': (horiz ? 'middle' : 'end')}, axis._labelFormat));
 		this._wrapper.line(gl, x1, y1, x2, y2);
 		if (axis._ticks.major) {
-			var bottomRight = (x2 > (this._wrapper._width() / 2) && 
+			var bottomRight = (x2 > (this._wrapper._width() / 2) &&
 				y2 > (this._wrapper._height() / 2));
 			var scale = (horiz ? x2 - x1 : y2 - y1) / (axis._scale.max - axis._scale.min);
 			var size = axis._ticks.size;
@@ -380,9 +438,9 @@ $.extend(SVGGraph.prototype, {
 				var len = (cur == major ? size : size / 2);
 				var v = (horiz ? x1 : y1) +
 					(horiz ? cur - axis._scale.min : axis._scale.max - cur) * scale;
-				this._wrapper.line(gl, (horiz ? v : x1 + len * offsets[0]), 
-					(horiz ? y1 + len * offsets[0] : v), 
-					(horiz ? v : x1 + len * offsets[1]), 
+				this._wrapper.line(gl, (horiz ? v : x1 + len * offsets[0]),
+					(horiz ? y1 + len * offsets[0] : v),
+					(horiz ? v : x1 + len * offsets[1]),
 					(horiz ? y1 + len * offsets[1] : v));
 				if (cur == major) {
 					this._wrapper.text(gt, (horiz ? v : x1 - size), (horiz ? y1 + 2 * size : v),
@@ -393,21 +451,21 @@ $.extend(SVGGraph.prototype, {
 			}
 		}
 	},
-	
+
 	/* Calculate offsets based on axis and tick positions.
-	   @param  axis         SVGGraphAxis - the axis definition
-	   @param  bottomRight  boolean - true if this axis is appearing on the bottom or 
+	   @param  axis         (SVGGraphAxis) the axis definition
+	   @param  bottomRight  (boolean) true if this axis is appearing on the bottom or
 	                        right of the chart area, false if to the top or left
-	   @return  the array of offset multipliers (-1..+1) */
+	   @return  (number[2]) the array of offset multipliers (-1..+1) */
 	_getTickOffsets: function(axis, bottomRight) {
-		return [(axis._ticks.position == (bottomRight ? 'in' : 'out') || 
-			axis._ticks.position == 'both' ? -1 : 0), 
-			(axis._ticks.position == (bottomRight ? 'out' : 'in') || 
+		return [(axis._ticks.position == (bottomRight ? 'in' : 'out') ||
+			axis._ticks.position == 'both' ? -1 : 0),
+			(axis._ticks.position == (bottomRight ? 'out' : 'in') ||
 			axis._ticks.position == 'both' ? +1 : 0), ];
 	},
-	
+
 	/* Retrieve the standard percentage axis.
-	   @return  percentage axis */
+	   @return  (SVGGraphAxis) percentage axis */
 	_getPercentageAxis: function() {
 		this._percentageAxis._title = $.svg.graphing.region.percentageText;
 		return this._percentageAxis;
@@ -425,7 +483,7 @@ $.extend(SVGGraph.prototype, {
 		}
 		return totals;
 	},
-	
+
 	/* Draw the chart legend. */
 	_drawLegend: function() {
 		if (!this.legend._show) {
@@ -450,7 +508,7 @@ $.extend(SVGGraph.prototype, {
 				yBase + (horiz ? 0 : i * offset), series._name, this.legend._textSettings);
 		}
 	},
-	
+
 	/* Show the current value status on hover. */
 	_showStatus: function(value) {
 		var onStatus = (!this._onstatus ? '' :
@@ -461,58 +519,158 @@ $.extend(SVGGraph.prototype, {
 	}
 });
 
+/* Details about each graph series.
+   @param  graph        (SVGGraph) the owning graph
+   @param  name         (string) the name of this series (optional)
+   @param  values       (number[]) the list of values to be plotted
+   @param  fill         (string) how the series should be displayed
+   @param  stroke       (string) the colour of the (out)line for the series (optional)
+   @param  strokeWidth  (number) the width of the (out)line for the series (optional)
+   @param  settings     (object) additional formatting settings (optional)
+   @return  (SVGGraphSeries) the new series object */
+function SVGGraphSeries(graph, name, values, fill, stroke, strokeWidth, settings) {
+	if (typeof name != 'string') {
+		settings = strokeWidth;
+		strokeWidth = stroke;
+		stroke = fill;
+		fill = values;
+		values = name;
+		name = null;
+	}
+	if (typeof stroke != 'string') {
+		settings = strokeWidth;
+		strokeWidth = stroke;
+		stroke = null;
+	}
+	if (typeof strokeWidth != 'number') {
+		settings = strokeWidth;
+		strokeWidth = null;
+	}
+	this._graph = graph; // The owning graph
+	this._name = name || ''; // The name of this series
+	this._values = values || []; // The list of values for this series
+	this._axis = 1; // Which axis this series applies to: 1 = primary, 2 = secondary
+	this._fill = fill || 'green'; // How the series is plotted
+	this._stroke = stroke || 'black'; // The colour for the (out)line
+	this._strokeWidth = strokeWidth || 1; // The (out)line width
+	this._settings = settings || {}; // Additional formatting settings for the series
+}
+
+$.extend(SVGGraphSeries.prototype, {
+
+	/* Set or retrieve the name for this series.
+	   @param  name    (string) the series' name
+	   @return  (SVGGraphSeries) this series object or
+	            (string) the series name (if no parameters) */
+	name: function(name) {
+		if (arguments.length == 0) {
+			return this._name;
+		}
+		this._name = name;
+		this._graph._drawGraph();
+		return this;
+	},
+
+	/* Set or retrieve the values for this series.
+	   @param  name    (string) the series' name (optional)
+	   @param  values  (number[]) the values to be graphed
+	   @return  (SVGGraphSeries) this series object or
+	            (number[]) the series values (if no parameters) */
+	values: function(name, values) {
+		if (arguments.length == 0) {
+			return this._values;
+		}
+		if (isArray(name)) {
+			values = name;
+			name = null;
+		}
+		this._name = name || this._name;
+		this._values = values;
+		this._graph._drawGraph();
+		return this;
+	},
+
+	/* Set or retrieve the formatting for this series.
+	   @param  fill         (string) how the values are filled when plotted
+	   @param  stroke       (string) the (out)line colour (optional)
+	   @param  strokeWidth  (number) the line's width (optional)
+	   @param  settings     (object) additional formatting settings for the series (optional)
+	   @return  (SVGGraphSeries) this series object or
+	            (object) formatting settings (if no parameters) */
+	format: function(fill, stroke, strokeWidth, settings) {
+		if (arguments.length == 0) {
+			return $.extend({fill: this._fill, stroke: this._stroke,
+				'stroke-width': this._strokeWidth}, this._settings);
+		}
+		if (typeof stroke != 'string') {
+			settings = strokeWidth;
+			strokeWidth = stroke;
+			stroke = null;
+		}
+		if (typeof strokeWidth != 'number') {
+			settings = strokeWidth;
+			strokeWidth = null;
+		}
+		this._fill = fill || this._fill;
+		this._stroke = stroke || this._stroke;
+		this._strokeWidth = strokeWidth || this._strokeWidth;
+		$.extend(this._settings, settings || {});
+		this._graph._drawGraph();
+		return this;
+	},
+
+	/* Return to the parent graph. */
+	end: function() {
+		return this._graph;
+	}
+});
+
 /* Details about each graph axis.
-   @param  title  string - the title of the axis
-   @param  min    number - the minimum value displayed on this axis
-   @param  max    number - the maximum value displayed on this axis
-   @param  major  number - the distance between major ticks
-   @param  minor  number - the distance between minor ticks (optional)
-   @return  the new axis object */
-function SVGGraphAxis(title, min, max, major, minor) {
-	/* Title of this axis. */
-	this._title = title || '';
-	/* Formatting settings for the title. */
-	this._titleFormat = {};
-	/* The offset for positioning the title. */
-	this._titleOffset = 0;
-	/* List of labels for this axis - one per possible value across all series. */
-	this._labels = null;
-	/* Formatting settings for the labels. */
-	this._labelFormat = {};
-	/* Formatting settings for the axis lines. */
-	this._lineFormat = {stroke: 'black'};
-	/* Tick mark options. */
-	this._ticks = {major: major || 10, minor: minor || 0, size: 10, position: 'out'};
-	/* Axis scale settings. */
-	this._scale = {min: min || 0, max: max || 100};
-	/* Where this axis crosses the other one. */
-	this._crossAt = 0;
+   @param  graph  (SVGGraph) the owning graph
+   @param  title  (string) the title of the axis
+   @param  min    (number) the minimum value displayed on this axis
+   @param  max    (number) the maximum value displayed on this axis
+   @param  major  (number) the distance between major ticks
+   @param  minor  (number) the distance between minor ticks (optional)
+   @return  (SVGGraphAxis) the new axis object */
+function SVGGraphAxis(graph, title, min, max, major, minor) {
+	this._graph = graph; // The owning graph
+	this._title = title || ''; // Title of this axis
+	this._titleFormat = {}; // Formatting settings for the title
+	this._titleOffset = 0; // The offset for positioning the title
+	this._labels = null; // List of labels for this axis - one per possible value across all series
+	this._labelFormat = {}; // Formatting settings for the labels
+	this._lineFormat = {stroke: 'black', 'stroke-width': 1}; // Formatting settings for the axis lines
+	this._ticks = {major: major || 10, minor: minor || 0, size: 10, position: 'out'}; // Tick mark options
+	this._scale = {min: min || 0, max: max || 100}; // Axis scale settings
+	this._crossAt = 0; // Where this axis crosses the other one
 }
 
 $.extend(SVGGraphAxis.prototype, {
 
 	/* Set or retrieve the scale for this axis.
-	   @param  min  number - the minimum value shown
-	   @param  max  number - the maximum value shown
-	   @return  SVGGraphAxis - this axis object or
-	            object - min and max values (if no parameters) */
+	   @param  min  (number) the minimum value shown
+	   @param  max  (number) the maximum value shown
+	   @return  (SVGGraphAxis) this axis object or
+	            (object) min and max values (if no parameters) */
 	scale: function(min, max) {
 		if (arguments.length == 0) {
 			return this._scale;
 		}
 		this._scale.min = min;
 		this._scale.max = max;
+		this._graph._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve the ticks for this axis.
-	   @param  major     number - the distance between major ticks
-	   @param  minor     number - the distance between minor ticks
-	   @param  size      number - the length of the major ticks (minor are half) (optional)
-	   @param  position  string - the location of the ticks:
+	   @param  major     (number) the distance between major ticks
+	   @param  minor     (number) the distance between minor ticks
+	   @param  size      (number) the length of the major ticks (minor are half) (optional)
+	   @param  position  (string) the location of the ticks:
 	                     'in', 'out', 'both' (optional)
-	   @return  SVGGraphAxis - this axis object or
-	            object - major, minor, size, and position values (if no parameters) */
+	   @return  (SVGGraphAxis) this axis object or
+	            (object) major, minor, size, and position values (if no parameters) */
 	ticks: function(major, minor, size, position) {
 		if (arguments.length == 0) {
 			return this._ticks;
@@ -523,17 +681,18 @@ $.extend(SVGGraphAxis.prototype, {
 		}
 		this._ticks.major = major;
 		this._ticks.minor = minor;
-		this._ticks.size = size || 10;
-		this._ticks.position = position || 'out';
+		this._ticks.size = size || this._ticks.size;
+		this._ticks.position = position || this._ticks.position;
+		this._graph._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve the title for this axis.
-	   @param  title   string - the title text
-	   @param  offset  number - the distance to offset the title position (optional)
-	   @param  format  object - formatting settings for the title (optional)
-	   @return  SVGGraphAxis - this axis object or
-	            object - title, offset, and format values (if no parameters) */
+	   @param  title   (string) the title text
+	   @param  offset  (number) the distance to offset the title position (optional)
+	   @param  format  (object) formatting settings for the title (optional)
+	   @return  (SVGGraphAxis) this axis object or
+	            (object) title, offset, and format values (if no parameters) */
 	title: function(title, offset, format) {
 		if (arguments.length == 0) {
 			return {title: this._title, offset: this._titleOffset, format: this._titleFormat};
@@ -543,37 +702,33 @@ $.extend(SVGGraphAxis.prototype, {
 			offset = null;
 		}
 		this._title = title;
-		if (offset != null) {
-			this._titleOffset = offset;
-		}
-		if (format) {
-			this._titleFormat = format;
-		}
+		this._titleOffset = (offset != null ? offset : this._titleOffset);
+		this._titleFormat = format || this._titleFormat;
+		this._graph._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve the labels for this axis.
-	   @param  labels  string[] - the text for each entry
-	   @param  format  object - formatting settings for the labels (optional)
-	   @return  SVGGraphAxis - this axis object or
-	            object - labels and format values (if no parameters) */
+	   @param  labels  (string[]) the text for each entry
+	   @param  format  (object) formatting settings for the labels (optional)
+	   @return  (SVGGraphAxis) this axis object or
+	            (object) labels and format values (if no parameters) */
 	labels: function(labels, format) {
 		if (arguments.length == 0) {
 			return {labels: this._labels, format: this._labelFormat};
 		}
 		this._labels = labels;
-		if (format) {
-			this._labelFormat = format;
-		}
+		this._labelFormat = format || this._labelFormat;
+		this._graph._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve the line formatting for this axis.
-	   @param  colour    string - the line's colour
-	   @param  width     number - the line's width (optional)
-	   @param  settings  object - additional formatting settings for the line (optional)
-	   @return  SVGGraphAxis - this axis object or
-	            object - line formatting values (if no parameters) */
+	   @param  colour    (string) the line's colour
+	   @param  width     (number) the line's width (optional)
+	   @param  settings  (object) additional formatting settings for the line (optional)
+	   @return  (SVGGraphAxis) this axis object or
+	            (object) line formatting values (if no parameters) */
 	line: function(colour, width, settings) {
 		if (arguments.length == 0) {
 			return this._lineFormat;
@@ -582,103 +737,27 @@ $.extend(SVGGraphAxis.prototype, {
 			settings = width;
 			width = null;
 		}
-		$.extend(this._lineFormat, {stroke: colour, 'stroke-width': width || 1});
-		$.extend(this._lineFormat, settings || {});
-		return this;
-	}
-});
-
-var defaultSeriesFill = 'green';
-var defaultSeriesStroke = 'black';
-
-/* Details about each graph series.
-   @param  name         string - the name of this series
-   @param  values       number[] - the list of values to be plotted
-   @param  fill         string - how the series should be displayed
-   @param  stroke       string - the colour of the (out)line for the series
-   @param  strokeWidth  number - the width of the (out)line for the series
-   @param  settings     object - additional formatting settings
-   @return  the new series object */
-function SVGGraphSeries(name, values, fill, stroke, strokeWidth, settings) {
-	/* The name of this series. */
-	this._name = name || '';
-	/* The list of values for this series. */
-	this._values = values || [];
-	/* Which axis this series applies to: 1 = primary, 2 = secondary. */
-	this._axis = 1;
-	/* How the series is plotted. */
-	this._fill = fill || defaultSeriesFill;
-	/* The colour for the (out)line. */
-	this._stroke = stroke || defaultSeriesStroke;
-	/* The (out)line width. */
-	this._strokeWidth = strokeWidth || 1;
-	/* Additional formatting settings for the series. */
-	this._settings = settings || {};
-}
-
-$.extend(SVGGraphSeries.prototype, {
-
-	/* Set or retrieve the name for this series.
-	   @param  name    string - the series' name
-	   @return  SVGGraphSeries - this series object or
-	            string - the series name (if no parameters) */
-	name: function(name) {
-		if (arguments.length == 0) {
-			return this._name;
-		}
-		this._name = name;
+		$.extend(this._lineFormat, {stroke: colour},
+			(width ? {'stroke-width': width} : {}), settings || {});
+		this._graph._drawGraph();
 		return this;
 	},
 
-	/* Set or retrieve the values for this series.
-	   @param  name    string - the series' name (optional)
-	   @param  values  number[] - the values to be graphed
-	   @return  SVGGraphSeries - this series object or
-	            number[] - the series values (if no parameters) */
-	values: function(name, values) {
-		if (arguments.length == 0) {
-			return this._values;
-		}
-		if (isArray(name)) {
-			valus = name;
-			name = null;
-		}
-		this._name = name || this._name;
-		this._values = values;
-		return this;
-	},
-	
-	/* Set or retrieve the formatting for this series.
-	   @param  fill         string - how the values are filled when plotted
-	   @param  stroke       string - the (out)line colour
-	   @param  strokeWidth  number - the line's width (optional)
-	   @param  settings     object - additional formatting settings for the series (optional)
-	   @return  SVGGraphSeries - this series object or
-	            object - formatting settings (if no parameters) */
-	format: function(fill, stroke, strokeWidth, settings) {
-		if (arguments.length == 0) {
-			return $.extend({fill: this._fill, stroke: this._stroke,
-				'stroke-width': this._strokeWidth}, this._settings);
-		}
-		if (typeof strokeWidth == 'object') {
-			settings = strokeWidth;
-			strokeWidth = null;
-		}
-		this._fill = fill || defaultSeriesFill;
-		this._stroke = stroke || this._stroke;
-		this._strokeWidth = strokeWidth || this._strokeWidth;
-		$.extend(this._settings, settings || {});
-		return this;
+	/* Return to the parent graph. */
+	end: function() {
+		return this._graph;
 	}
 });
 
 /* Details about the graph legend.
-   @param  bgSettings    object - additional formatting settings for the legend background (optional)
-   @param  textSettings  object - additional formatting settings for the legend text (optional)
-   @return  the new legend object */
-function SVGGraphLegend(bgSettings, textSettings) {
+   @param  graph         (SVGGraph) the owning graph
+   @param  bgSettings    (object) additional formatting settings for the legend background (optional)
+   @param  textSettings  (object) additional formatting settings for the legend text (optional)
+   @return  (SVGGraphLegend) the new legend object */
+function SVGGraphLegend(graph, bgSettings, textSettings) {
+	this._graph = graph; // The owning graph
 	this._show = true; // Show the legend?
-	this._area = [0.9, 0.1, 1.0, 0.9]; // The legend area: left, top, right, bottom, 
+	this._area = [0.9, 0.1, 1.0, 0.9]; // The legend area: left, top, right, bottom,
 		// > 1 in pixels, <= 1 as proportion
 	this._sampleSize = 15; // Size of sample box
 	this._bgSettings = bgSettings || {stroke: 'gray'}; // Additional formatting settings for the legend background
@@ -688,39 +767,41 @@ function SVGGraphLegend(bgSettings, textSettings) {
 $.extend(SVGGraphLegend.prototype, {
 
 	/* Set or retrieve whether the legend should be shown.
-	   @param  show  boolean - true to display it, false to hide it
-	   @return  SVGGraphLegend - this legend object or
-	            boolean - show the legend? (if no parameters) */
+	   @param  show  (boolean) true to display it, false to hide it
+	   @return  (SVGGraphLegend) this legend object or
+	            (boolean) show the legend? (if no parameters) */
 	show: function(show) {
 		if (arguments.length == 0) {
 			return this._show;
 		}
 		this._show = show;
+		this._graph._drawGraph();
 		return this;
 	},
-	
+
 	/* Set or retrieve the legend area.
-	   @param  left    number - > 1 is pixels, <= 1 is proportion of width or
-	                   number[4] - for left, top, right, bottom
-	   @param  top     number - > 1 is pixels, <= 1 is proportion of height
-	   @param  right   number - > 1 is pixels, <= 1 is proportion of width
-	   @param  bottom  number - > 1 is pixels, <= 1 is proportion of height
-	   @return  SVGGraphLegend - this legend object or
-	            number[4] - the legend area: left, top, right, bottom (if no parameters) */
+	   @param  left    (number) > 1 is pixels, <= 1 is proportion of width or
+	                   (number[4]) for left, top, right, bottom
+	   @param  top     (number) > 1 is pixels, <= 1 is proportion of height
+	   @param  right   (number) > 1 is pixels, <= 1 is proportion of width
+	   @param  bottom  (number) > 1 is pixels, <= 1 is proportion of height
+	   @return  (SVGGraphLegend) this legend object or
+	            (number[4]) the legend area: left, top, right, bottom (if no parameters) */
 	area: function(left, top, right, bottom) {
 		if (arguments.length == 0) {
 			return this._area;
 		}
 		this._area = (isArray(left) ? left : [left, top, right, bottom]);
+		this._graph._drawGraph();
 		return this;
 	},
 
 	/* Set or retrieve additional settings for the legend area.
-	   @param  sampleSize    number - the size of the sample box to display (optional)
-	   @param  bgSettings    object - additional formatting settings for the legend background
-	   @param  textSettings  object - additional formatting settings for the legend text (optional)
-	   @return  SVGGraphLegend - this legend object or
-	            object - bgSettings and textSettings for the legend (if no parameters) */
+	   @param  sampleSize    (number) the size of the sample box to display (optional)
+	   @param  bgSettings    (object) additional formatting settings for the legend background
+	   @param  textSettings  (object) additional formatting settings for the legend text (optional)
+	   @return  (SVGGraphLegend) this legend object or
+	            (object) bgSettings and textSettings for the legend (if no parameters) */
 	settings: function(sampleSize, bgSettings, textSettings) {
 		if (arguments.length == 0) {
 			return {sampleSize: this._sampleSize, bgSettings: this._bgSettings,
@@ -731,14 +812,16 @@ $.extend(SVGGraphLegend.prototype, {
 			bgSettings = sampleSize;
 			sampleSize = null;
 		}
-		if (sampleSize) {
-			this._sampleSize = sampleSize;
-		}
+		this._sampleSize = sampleSize || this._sampleSize;
 		this._bgSettings = bgSettings;
-		if (textSettings) {
-			this._textSettings = textSettings;
-		}
+		this._textSettings = textSettings || this._textSettings;
+		this._graph._drawGraph();
 		return this;
+	},
+
+	/* Return to the parent graph. */
+	end: function() {
+		return this._graph;
 	}
 });
 
@@ -749,8 +832,8 @@ function roundNumber(num, dec) {
 	return Math.round(num * Math.pow(10, dec)) / Math.pow(10, dec);
 }
 
-var barOptions = ['barWidth (number) - the width of each bar',
-	'barGap (number) - the gap between sets of bars'];
+var barOptions = ['barWidth (number) the width of each bar',
+	'barGap (number) the gap between sets of bars'];
 
 //------------------------------------------------------------------------------
 
@@ -779,7 +862,7 @@ $.extend(SVGColumnChart.prototype, {
 	},
 
 	/* Actually draw the graph in this type's style.
-	   @param  graph  object - the SVGGraph object */
+	   @param  graph  (object) the SVGGraph object */
 	drawGraph: function(graph) {
 		graph._drawChartBackground(true);
 		var barWidth = graph._chartOptions.barWidth || 10;
@@ -798,7 +881,7 @@ $.extend(SVGColumnChart.prototype, {
 		this._drawXAxis(graph, numSer, numVal, barWidth, barGap, dims, xScale);
 		graph._drawLegend();
 	},
-	
+
 	/* Plot an individual series. */
 	_drawSeries: function(graph, cur, numSer, barWidth, barGap, dims, xScale, yScale) {
 		var series = graph._series[cur];
@@ -806,14 +889,14 @@ $.extend(SVGColumnChart.prototype, {
 			$.extend({stroke: series._stroke,
 			'stroke-width': series._strokeWidth}, series._settings || {}));
 		for (var i = 0; i < series._values.length; i++) {
-			graph._wrapper.rect(g, 
+			graph._wrapper.rect(g,
 				dims[graph.X] + xScale * (barGap + i * (numSer * barWidth + barGap) + (cur * barWidth)),
-				dims[graph.Y] + yScale * (graph.yAxis._scale.max - series._values[i]), 
+				dims[graph.Y] + yScale * (graph.yAxis._scale.max - series._values[i]),
 				xScale * barWidth, yScale * series._values[i], $.extend({fill: series._fill},
 				graph._showStatus(series._name + ' ' + series._values[i])));
 		}
 	},
-	
+
 	/* Draw the x-axis and its ticks. */
 	_drawXAxis: function(graph, numSer, numVal, barWidth, barGap, dims, xScale) {
 		var axis = graph.xAxis;
@@ -871,7 +954,7 @@ $.extend(SVGStackedColumnChart.prototype, {
 	},
 
 	/* Actually draw the graph in this type's style.
-	   @param  graph  object - the SVGGraph object */
+	   @param  graph  (object) the SVGGraph object */
 	drawGraph: function(graph) {
 		var bg = graph._drawChartBackground(true, true);
 		var dims = graph._getDims();
@@ -895,7 +978,7 @@ $.extend(SVGStackedColumnChart.prototype, {
 		this._drawXAxis(graph, numVal, barWidth, barGap, dims, xScale);
 		graph._drawLegend();
 	},
-	
+
 	/* Plot all of the columns. */
 	_drawColumns: function(graph, numSer, numVal, barWidth, barGap, dims, xScale, yScale) {
 		var totals = graph._getTotals();
@@ -919,7 +1002,7 @@ $.extend(SVGStackedColumnChart.prototype, {
 			}
 		}
 	},
-	
+
 	/* Draw the x-axis and its ticks. */
 	_drawXAxis: function(graph, numVal, barWidth, barGap, dims, xScale) {
 		var axis = graph.xAxis;
@@ -976,7 +1059,7 @@ $.extend(SVGRowChart.prototype, {
 	},
 
 	/* Actually draw the graph in this type's style.
-	   @param  graph  object - the SVGGraph object */
+	   @param  graph  (object) the SVGGraph object */
 	drawGraph: function(graph) {
 		var bg = graph._drawChartBackground(true, true);
 		var dims = graph._getDims();
@@ -995,7 +1078,7 @@ $.extend(SVGRowChart.prototype, {
 		this._drawAxes(graph, numSer, numVal, barWidth, barGap, dims, yScale);
 		graph._drawLegend();
 	},
-	
+
 	/* Plot an individual series. */
 	_drawSeries: function(graph, cur, numSer, barWidth, barGap, dims, xScale, yScale) {
 		var series = graph._series[cur];
@@ -1010,7 +1093,7 @@ $.extend(SVGRowChart.prototype, {
 				graph._showStatus(series._name + ' ' + series._values[i])));
 		}
 	},
-	
+
 	/* Draw the axes for this graph. */
 	_drawAxes: function(graph, numSer, numVal, barWidth, barGap, dims, yScale) {
 		// X-axis
@@ -1078,7 +1161,7 @@ $.extend(SVGStackedRowChart.prototype, {
 	},
 
 	/* Actually draw the graph in this type's style.
-	   @param  graph  object - the SVGGraph object */
+	   @param  graph  (object) the SVGGraph object */
 	drawGraph: function(graph) {
 		var bg = graph._drawChartBackground(true, true);
 		var dims = graph._getDims();
@@ -1103,7 +1186,7 @@ $.extend(SVGStackedRowChart.prototype, {
 		this._drawYAxis(graph, numVal, barWidth, barGap, dims, yScale);
 		graph._drawLegend();
 	},
-	
+
 	/* Plot all of the rows. */
 	_drawRows: function(graph, numSer, numVal, barWidth, barGap, dims, xScale, yScale) {
 		var totals = graph._getTotals();
@@ -1127,7 +1210,7 @@ $.extend(SVGStackedRowChart.prototype, {
 			}
 		}
 	},
-	
+
 	/* Draw the y-axis and its ticks. */
 	_drawYAxis: function(graph, numVal, barWidth, barGap, dims, yScale) {
 		var axis = graph.xAxis;
@@ -1183,7 +1266,7 @@ $.extend(SVGLineChart.prototype, {
 	},
 	
 	/* Actually draw the graph in this type's style.
-	   @param  graph  object - the SVGGraph object */
+	   @param  graph  (object) the SVGGraph object */
 	drawGraph: function(graph) {
 		graph._drawChartBackground();
 		var dims = graph._getDims();
@@ -1197,7 +1280,7 @@ $.extend(SVGLineChart.prototype, {
 		graph._drawAxes();
 		graph._drawLegend();
 	},
-	
+
 	/* Plot an individual series. */
 	_drawSeries: function(graph, cur, dims, xScale, yScale) {
 		var series = graph._series[cur];
@@ -1212,10 +1295,10 @@ $.extend(SVGLineChart.prototype, {
 				path.lineTo(x, y);
 			}
 		}
-		graph._wrapper.path(this._chart, path, 
-			$.extend($.extend({id: 'series' + cur, fill: 'none', stroke: series._stroke, 
+		graph._wrapper.path(this._chart, path,
+			$.extend({id: 'series' + cur, fill: 'none', stroke: series._stroke,
 			'stroke-width': series._strokeWidth}, graph._showStatus(series._name),
-			series._settings || {})));
+			series._settings || {}));
 	}
 });
 
@@ -1227,9 +1310,9 @@ function SVGPieChart() {
 
 $.extend(SVGPieChart.prototype, {
 
-	_options: ['explode (number[]) - indexes of sections to explode out of the pie',
-		'explodeDist (number) - the distance to move an exploded section',
-		'pieGap (number) - the distance between pies for multiple values'],
+	_options: ['explode (number[]) indexes of sections to explode out of the pie',
+		'explodeDist (number) the distance to move an exploded section',
+		'pieGap (number) the distance between pies for multiple values'],
 
 	/* Retrieve the display title for this chart type.
 	   @return  the title */
@@ -1248,9 +1331,9 @@ $.extend(SVGPieChart.prototype, {
 	options: function() {
 		return this._options;
 	},
-	
+
 	/* Actually draw the graph in this type's style.
-	   @param  graph  object - the SVGGraph object */
+	   @param  graph  (object) the SVGGraph object */
 	drawGraph: function(graph) {
 		graph._drawChartBackground(true, true);
 		this._chart = graph._wrapper.group(graph._chartGroup, 'chart');
@@ -1259,7 +1342,7 @@ $.extend(SVGPieChart.prototype, {
 		graph._drawTitle();
 		graph._drawLegend();
 	},
-	
+
 	/* Plot all the series. */
 	_drawSeries: function(graph, dims) {
 		var totals = graph._getTotals();
@@ -1305,8 +1388,8 @@ $.extend(SVGPieChart.prototype, {
 					roundNumber((end - start) / 2 / Math.PI * 100, 2) + '%';
 				graph._wrapper.path(gl[j], path.reset().moveTo(x, y).
 					lineTo(x + radius * Math.cos(start), y + radius * Math.sin(start)).
-					arcTo(radius, radius, 0, (end - start < Math.PI ? 0 : 1), 1, 
-					x + radius * Math.cos(end), y + radius * Math.sin(end)).close(), 
+					arcTo(radius, radius, 0, (end - start < Math.PI ? 0 : 1), 1,
+					x + radius * Math.cos(end), y + radius * Math.sin(end)).close(),
 					$.extend({fill: series._fill}, graph._showStatus(status)));
 			}
 			if (graph.xAxis) {
