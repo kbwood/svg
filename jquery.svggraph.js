@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG graphing extension for jQuery v1.4.0.
+   SVG graphing extension for jQuery v1.4.1.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
@@ -1337,10 +1337,10 @@ $.extend(SVGLineChart.prototype, {
 			var x = dims[graph.X] + i * xScale;
 			var y = dims[graph.Y] + (graph.yAxis._scale.max - series._values[i]) * yScale;
 			if (i == 0) {
-				path.moveTo(x, y);
+				path.move(x, y);
 			}
 			else {
-				path.lineTo(x, y);
+				path.line(x, y);
 			}
 		}
 		graph._wrapper.path(this._chart, path,
@@ -1434,9 +1434,9 @@ $.extend(SVGPieChart.prototype, {
 				var y = cy + (exploding ? explodeDist * Math.sin((start + end) / 2) : 0);
 				var status = series._name + ' ' +
 					roundNumber((end - start) / 2 / Math.PI * 100, 2) + '%';
-				graph._wrapper.path(gl[j], path.reset().moveTo(x, y).
-					lineTo(x + radius * Math.cos(start), y + radius * Math.sin(start)).
-					arcTo(radius, radius, 0, (end - start < Math.PI ? 0 : 1), 1,
+				graph._wrapper.path(gl[j], path.reset().move(x, y).
+					line(x + radius * Math.cos(start), y + radius * Math.sin(start)).
+					arc(radius, radius, 0, (end - start < Math.PI ? 0 : 1), 1,
 					x + radius * Math.cos(end), y + radius * Math.sin(end)).close(),
 					graph._showStatus(status));
 			}

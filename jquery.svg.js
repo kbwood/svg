@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery v1.4.0.
+   SVG for jQuery v1.4.1.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -1046,9 +1046,9 @@ $.extend(SVGWrapper.prototype, {
    Obtain an instance from the SVGWrapper object.
    String calls together to generate the path and use its value:
    var path = root.createPath();
-   root.path(null, path.moveTo(100, 100).lineTo(300, 100).lineTo(200, 300).close(), {fill: 'red'});
+   root.path(null, path.move(100, 100).line(300, 100).line(200, 300).close(), {fill: 'red'});
    or
-   root.path(null, path.moveTo(100, 100).lineTo([[300, 100], [200, 300]]).close(), {fill: 'red'}); */
+   root.path(null, path.move(100, 100).line([[300, 100], [200, 300]]).close(), {fill: 'red'}); */
 function SVGPath() {
 	this._path = '';
 }
@@ -1068,7 +1068,7 @@ $.extend(SVGPath.prototype, {
 	   @param  relative  (boolean) true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  (SVGPath) this path */
-	moveTo: function(x, y, relative) {
+	move: function(x, y, relative) {
 		relative = (isArray(x) ? y : relative);
 		return this._coords((relative ? 'm' : 'M'), x, y);
 	},
@@ -1080,7 +1080,7 @@ $.extend(SVGPath.prototype, {
 	   @param  relative  (boolean) true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  (SVGPath) this path */
-	lineTo: function(x, y, relative) {
+	line: function(x, y, relative) {
 		relative = (isArray(x) ? y : relative);
 		return this._coords((relative ? 'l' : 'L'), x, y);
 	},
@@ -1091,7 +1091,7 @@ $.extend(SVGPath.prototype, {
 	   @param  relative  (boolean) true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  (SVGPath) this path */
-	horizTo: function(x, relative) {
+	horiz: function(x, relative) {
 		this._path += (relative ? 'h' : 'H') + (isArray(x) ? x.join(' ') : x);
 		return this;
 	},
@@ -1102,7 +1102,7 @@ $.extend(SVGPath.prototype, {
 	   @param  relative  (boolean) true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  (SVGPath) this path */
-	vertTo: function(y, relative) {
+	vert: function(y, relative) {
 		this._path += (relative ? 'v' : 'V') + (isArray(y) ? y.join(' ') : y);
 		return this;
 	},
@@ -1118,7 +1118,7 @@ $.extend(SVGPath.prototype, {
 	   @param  relative  (boolean) true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  (SVGPath) this path */
-	curveCTo: function(x1, y1, x2, y2, x, y, relative) {
+	curveC: function(x1, y1, x2, y2, x, y, relative) {
 		relative = (isArray(x1) ? y1 : relative);
 		return this._coords((relative ? 'c' : 'C'), x1, y1, x2, y2, x, y);
 	},
@@ -1133,7 +1133,7 @@ $.extend(SVGPath.prototype, {
 	   @param  relative  (boolean) true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  (SVGPath) this path */
-	smoothCTo: function(x2, y2, x, y, relative) {
+	smoothC: function(x2, y2, x, y, relative) {
 		relative = (isArray(x2) ? y2 : relative);
 		return this._coords((relative ? 's' : 'S'), x2, y2, x, y);
 	},
@@ -1147,7 +1147,7 @@ $.extend(SVGPath.prototype, {
 	   @param  relative  (boolean) true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  (SVGPath) this path */
-	curveQTo: function(x1, y1, x, y, relative) {
+	curveQ: function(x1, y1, x, y, relative) {
 		relative = (isArray(x1) ? y1 : relative);
 		return this._coords((relative ? 'q' : 'Q'), x1, y1, x, y);
 	},
@@ -1160,7 +1160,7 @@ $.extend(SVGPath.prototype, {
 	   @param  relative  (boolean) true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  (SVGPath) this path */
-	smoothQTo: function(x, y, relative) {
+	smoothQ: function(x, y, relative) {
 		relative = (isArray(x) ? y : relative);
 		return this._coords((relative ? 't' : 'T'), x, y);
 	},
@@ -1197,7 +1197,7 @@ $.extend(SVGPath.prototype, {
 	   @param  relative   (boolean) true for coordinates relative to the current point,
 	                      false for coordinates being absolute
 	   @return  (SVGPath) this path */
-	arcTo: function(rx, ry, xRotate, large, clockwise, x, y, relative) {
+	arc: function(rx, ry, xRotate, large, clockwise, x, y, relative) {
 		relative = (isArray(rx) ? ry : relative);
 		this._path += (relative ? 'a' : 'A');
 		if (isArray(rx)) {
@@ -1228,6 +1228,16 @@ $.extend(SVGPath.prototype, {
 		return this._path;
 	}
 });
+
+SVGPath.prototype.moveTo = SVGPath.prototype.move;
+SVGPath.prototype.lineTo = SVGPath.prototype.line;
+SVGPath.prototype.horizTo = SVGPath.prototype.horiz;
+SVGPath.prototype.vertTo = SVGPath.prototype.vert;
+SVGPath.prototype.curveCTo = SVGPath.prototype.curveC;
+SVGPath.prototype.smoothCTo = SVGPath.prototype.smoothC;
+SVGPath.prototype.curveQTo = SVGPath.prototype.curveQ;
+SVGPath.prototype.smoothQTo = SVGPath.prototype.smoothQ;
+SVGPath.prototype.arcTo = SVGPath.prototype.arc;
 
 /* Helper to generate an SVG text object.
    Obtain an instance from the SVGWrapper object.
