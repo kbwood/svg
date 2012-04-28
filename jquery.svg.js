@@ -1,6 +1,6 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery v1.3.1.
-   Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
+   SVG for jQuery v1.3.2.
+   Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
@@ -20,6 +20,19 @@ function SVGManager() {
 		notSupportedText: 'This browser does not support SVG'};
 	this.local = this.regional['']; // Current localisation
 	this._uuid = new Date().getTime();
+	this._renesis = detectActiveX('RenesisX.RenesisCtrl');
+}
+
+/* Determine whether a given ActiveX control is available.
+   @param  classId  (string) the ID for the ActiveX control
+   @return  (boolean) true if found, false if not */
+function detectActiveX(classId) {
+	try {
+		return !!(window.ActiveXObject && new ActiveXObject(classId));
+	}
+	catch (e) {
+		return false;
+	}
 }
 
 var PROP_NAME = 'svgwrapper';
@@ -71,7 +84,7 @@ $.extend(SVGManager.prototype, {
 	_registerSVG: function() {
 		for (var i = 0; i < document.embeds.length; i++) { // Check all
 			var container = document.embeds[i].parentNode;
-			if (!$(container).hasClass(this.markerClassName) || // Not SVG
+			if (!$(container).hasClass($.svg.markerClassName) || // Not SVG
 					$.data(container, PROP_NAME)) { // Already done
 				continue;
 			}
@@ -85,7 +98,7 @@ $.extend(SVGManager.prototype, {
 			}
 			svg = (svg ? svg.documentElement : null);
 			if (svg) {
-				this._afterLoad(container, svg);
+				$.svg._afterLoad(container, svg);
 			}
 		}
 	},
@@ -97,12 +110,12 @@ $.extend(SVGManager.prototype, {
 		var wrapper = new this._wrapperClass(svg, container);
 		$.data(container, PROP_NAME, wrapper);
 		if (settings.loadURL) { // Load URL
-			wrapper.load(settings.loadURL);
+			wrapper.load(settings.loadURL, settings);
 		}
 		if (settings.settings) { // Additional settings
 			wrapper.configure(settings.settings);
 		}
-		if (settings.onLoad) { // Onload callback
+		if (settings.onLoad && !settings.loadURL) { // Onload callback
 			settings.onLoad.apply(container, [wrapper]);
 		}
 	},
@@ -735,18 +748,26 @@ $.extend(SVGWrapper.prototype, {
 	   @param  node    (element) the new node to add or
 	                   (string) the jQuery selector for the node or
 	                   (jQuery collection) set of nodes to add
-	   @return  (SVGWrapper) this root */
+	   @return  (SVGWrapper) this wrapper */
 	add: function(parent, node) {
 		var args = this._args(arguments, ['node']);
 		var svg = this;
 		args.parent = args.parent || this._svg;
-		args.node = (args.node.jquery ? args.node : $(args.node));
-		args.node.each(function() {
-			var child = svg._cloneAsSVG(this);
-			if (child) {
-				args.parent.appendChild(child);
+		try {
+			if ($.svg._renesis) {
+				throw 'Force traversal';
 			}
-		});
+			args.parent.appendChild(args.node.cloneNode(true));
+		}
+		catch (e) {
+			args.node = (args.node.jquery ? args.node : $(args.node));
+			args.node.each(function() {
+				var child = svg._cloneAsSVG(this);
+				if (child) {
+					args.parent.appendChild(child);
+				}
+			});
+		}
 		return this;
 	},
 
@@ -854,7 +875,15 @@ $.extend(SVGWrapper.prototype, {
 			wrapper.configure(attrs, true);
 			var nodes = data.documentElement.childNodes;
 			for (var i = 0; i < nodes.length; i++) {
-				wrapper.add(null, nodes[i]);
+				try {
+					if ($.svg._renesis) {
+						throw 'Force traversal';
+					}
+					wrapper._svg.appendChild(nodes[i].cloneNode(true));
+				}
+				catch (e) {
+					wrapper.add(null, nodes[i]);
+				}
 			}
 			if (!settings.changeSize) {
 				wrapper.configure({width: size[0], height: size[1]});
@@ -1219,6 +1248,7 @@ $.fn.svg = function(options) {
 
 /* Support adding class names to SVG nodes. */
 var origAddClass = $.fn.addClass;
+
 $.fn.addClass = function(classNames) {
 	classNames = classNames || '';
 	var addName = function(name, names) {
@@ -1247,6 +1277,7 @@ $.fn.addClass = function(classNames) {
 
 /* Support removing class names from SVG nodes. */
 var origRemoveClass = $.fn.removeClass;
+
 $.fn.removeClass = function(classNames) {
 	classNames = classNames || '';
 	var removeName = function(name, names) {
@@ -1275,13 +1306,16 @@ $.fn.removeClass = function(classNames) {
 };
 
 /* Support toggling class names on SVG nodes. */
-var origToggleClass = $.fn.toggleClass;
-$.fn.toggleClass = function(className) {
-	this[(this.hasClass(className) ? 'remove' : 'add') + 'Class'](className);
+$.fn.toggleClass = function(className, state) {
+	if (typeof state !== 'boolean') {
+		state = !this.hasClass(className);
+	}
+	this[(state ? 'add' : 'remove') + 'Class'](className);
 };
 
 /* Support checking class names on SVG nodes. */
 var origHasClass = $.fn.hasClass;
+
 $.fn.hasClass = function(className) {
 	className = className || '';
 	var found = false;

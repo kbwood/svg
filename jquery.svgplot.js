@@ -1,6 +1,6 @@
 /* http://keith-wood.name/svg.html
-   SVG plotting extension for jQuery v1.3.1.
-   Written by Keith Wood (kbwood@virginbroadband.com.au) December 2008.
+   SVG plotting extension for jQuery v1.3.2.
+   Written by Keith Wood (kbwood{at}iinet.com.au) December 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
    Please attribute the author if you use it. */
@@ -211,7 +211,7 @@ $.extend(SVGPlot.prototype, {
 		// Set sizes if not already there
 		if (!this._plotCont.width) {
 			this._plotCont.setAttribute('width',
-				parseInt(this._plotCont.getAttribute('width')) || this._wrapper._width());
+				parseInt(this._plotCont.getAttribute('width'), 10) || this._wrapper._width());
 		}
 		else if (this._plotCont.width.baseVal) {
 			this._plotCont.width.baseVal.value =
@@ -222,7 +222,7 @@ $.extend(SVGPlot.prototype, {
 		}
 		if (!this._plotCont.height) {
 			this._plotCont.setAttribute('height',
-				parseInt(this._plotCont.getAttribute('height')) || this._wrapper._height());
+				parseInt(this._plotCont.getAttribute('height'), 10) || this._wrapper._height());
 		}
 		else if (this._plotCont.height.baseVal) {
 			this._plotCont.height.baseVal.value =
@@ -251,7 +251,7 @@ $.extend(SVGPlot.prototype, {
 	   @param  name  the attribute name
 	   @return  the actual value */
 	_getValue: function(node, name) {
-		return (!node[name] ? parseInt(node.getAttribute(name)) :
+		return (!node[name] ? parseInt(node.getAttribute(name), 10) :
 			(node[name].baseVal ? node[name].baseVal.value : node[name]));
 	},
 

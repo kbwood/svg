@@ -1,6 +1,6 @@
 /* http://keith-wood.name/svg.html
-   SVG attribute animations for jQuery v1.3.1.
-   Written by Keith Wood (kbwood@virginbroadband.com.au) June 2008.
+   SVG attribute animations for jQuery v1.3.2.
+   Written by Keith Wood (kbwood{at}iinet.com.au) June 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
@@ -102,6 +102,13 @@ $.fx.step['svg-transform'] = function(fx) {
 				transform += (fx.start.skewY != fx.end.skewY ?
 					' skewY(' + (fx.pos * (fx.end.skewY - fx.start.skewY) + fx.start.skewY) + ')' : '');
 				break;
+			case 'm':
+				var matrix = '';
+				for (var j = 0; j < 6; j++) {
+					matrix += ',' + (fx.pos * (fx.end.matrix[j] - fx.start.matrix[j]) + fx.start.matrix[j]);
+				}				
+				transform += ' matrix(' + matrix.substr(1) + ')';
+				break;
 		}
 	}
 	(attr ? attr.nodeValue = transform : fx.elem.setAttribute('transform', transform));
@@ -117,9 +124,10 @@ function parseTransform(value, original) {
 		value = value.nodeValue;
 	}
 	var transform = $.extend({translateX: 0, translateY: 0, scaleX: 0, scaleY: 0,
-		rotateA: 0, rotateX: 0, rotateY: 0, skewX: 0, skewY: 0}, original || {});
+		rotateA: 0, rotateX: 0, rotateY: 0, skewX: 0, skewY: 0,
+		matrix: [0, 0, 0, 0, 0, 0]}, original || {});
 	transform.order = '';
-	var pattern = /([a-zA-Z]+)\(\s*([+-]?[\d\.]+)\s*,?\s*([+-]?[\d\.]+)?\s*,?\s*([+-]?[\d\.]+)?\s*\)/g;
+	var pattern = /([a-zA-Z]+)\(\s*([+-]?[\d\.]+)\s*(?:[\s,]\s*([+-]?[\d\.]+)\s*(?:[\s,]\s*([+-]?[\d\.]+)\s*(?:[\s,]\s*([+-]?[\d\.]+)\s*[\s,]\s*([+-]?[\d\.]+)\s*[\s,]\s*([+-]?[\d\.]+)\s*)?)?)?\)/g;
 	var result = pattern.exec(value);
 	while (result) {
 		switch (result[1]) {
@@ -131,7 +139,7 @@ function parseTransform(value, original) {
 			case 'scale':
 				transform.order += 's';
 				transform.scaleX = parseFloat(result[2]);
-				transform.scaleY = (result[3] ? parseFloat(result[3]) : result[1]);
+				transform.scaleY = (result[3] ? parseFloat(result[3]) : transform.scaleX);
 				break;
 			case 'rotate':
 				transform.order += 'r';
@@ -146,6 +154,12 @@ function parseTransform(value, original) {
 			case 'skewY':
 				transform.order += 'y';
 				transform.skewY = parseFloat(result[2]);
+				break;
+			case 'matrix':
+				transform.order += 'm';
+				transform.matrix = [parseFloat(result[2]), parseFloat(result[3]),
+					parseFloat(result[4]), parseFloat(result[5]),
+					parseFloat(result[6]), parseFloat(result[7])];
 				break;
 		}
 		result = pattern.exec(value);
@@ -165,9 +179,9 @@ $.each(['fill', 'stroke'],
 			}
 			var attr = fx.elem.attributes.getNamedItem(attrName);
 			var colour = 'rgb(' + [
-				Math.min(Math.max(parseInt((fx.pos * (fx.end[0] - fx.start[0])) + fx.start[0]), 0), 255),
-				Math.min(Math.max(parseInt((fx.pos * (fx.end[1] - fx.start[1])) + fx.start[1]), 0), 255),
-				Math.min(Math.max(parseInt((fx.pos * (fx.end[2] - fx.start[2])) + fx.start[2]), 0), 255)
+				Math.min(Math.max(parseInt((fx.pos * (fx.end[0] - fx.start[0])) + fx.start[0], 10), 0), 255),
+				Math.min(Math.max(parseInt((fx.pos * (fx.end[1] - fx.start[1])) + fx.start[1], 10), 0), 255),
+				Math.min(Math.max(parseInt((fx.pos * (fx.end[2] - fx.start[2])) + fx.start[2], 10), 0), 255)
 			].join(',') + ')';
 			colour = (fx.end[3] && fx.state == 1 ? 'none' : colour);
 			(attr ? attr.nodeValue = colour : fx.elem.setAttribute(attrName, colour));
@@ -203,7 +217,7 @@ function getRGB(colour) {
 	}
 	// Look for rgb(num,num,num)
 	if (result = /rgb\(\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)/.exec(colour)) {
-		return [parseInt(result[1]), parseInt(result[2]), parseInt(result[3])];
+		return [parseInt(result[1], 10), parseInt(result[2], 10), parseInt(result[3], 10)];
 	}
 	// Look for rgb(num%,num%,num%)
 	if (result = /rgb\(\s*([0-9]+(?:\.[0-9]+)?)\%\s*,\s*([0-9]+(?:\.[0-9]+)?)\%\s*,\s*([0-9]+(?:\.[0-9]+)?)\%\s*\)/.exec(colour)) {

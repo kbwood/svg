@@ -1,6 +1,6 @@
 /* http://keith-wood.name/svg.html
-   SVG graphing extension for jQuery v1.3.1.
-   Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
+   SVG graphing extension for jQuery v1.3.2.
+   Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
    Please attribute the author if you use it. */
@@ -322,7 +322,7 @@ $.extend(SVGGraph.prototype, {
 		// Set sizes if not already there
 		if (!this._chartCont.width) {
 			this._chartCont.setAttribute('width',
-				parseInt(this._chartCont.getAttribute('width')) || this._wrapper._width());
+				parseInt(this._chartCont.getAttribute('width'), 10) || this._wrapper._width());
 		}
 		else if (this._chartCont.width.baseVal) {
 			this._chartCont.width.baseVal.value =
@@ -333,7 +333,7 @@ $.extend(SVGGraph.prototype, {
 		}
 		if (!this._chartCont.height) {
 			this._chartCont.setAttribute('height',
-				parseInt(this._chartCont.getAttribute('height')) || this._wrapper._height());
+				parseInt(this._chartCont.getAttribute('height'), 10) || this._wrapper._height());
 		}
 		else if (this._chartCont.height.baseVal) {
 			this._chartCont.height.baseVal.value =
@@ -350,7 +350,7 @@ $.extend(SVGGraph.prototype, {
 	   @param  name  the attribute name
 	   @return  the actual value */
 	_getValue: function(node, name) {
-		return (!node[name] ? parseInt(node.getAttribute(name)) :
+		return (!node[name] ? parseInt(node.getAttribute(name), 10) :
 			(node[name].baseVal ? node[name].baseVal.value : node[name]));
 	},
 
