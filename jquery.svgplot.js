@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG plotting extension for jQuery v1.3.0.
+   SVG plotting extension for jQuery v1.3.1.
    Written by Keith Wood (kbwood@virginbroadband.com.au) December 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
@@ -24,7 +24,7 @@ function SVGPlot(wrapper) {
 	this._functions = []; // The functions to be plotted, each is an object
 	this._onstatus = null; // The callback function for status updates
 	this._uuid = new Date().getTime();
-	this._plotGroup = this._wrapper.group('plot' + this._uuid); // The main group for the plot
+	this._plotCont = this._wrapper.svg(0, 0, 0, 0, {'class': 'svg-plot'}); // The main container for the plot
 	
 	this.xAxis = new SVGPlotAxis(this); // The main x-axis
 	this.xAxis.title('X', 20);
@@ -45,6 +45,18 @@ $.extend(SVGPlot.prototype, {
 	T: 1,
 	R: 2,
 	B: 3,
+
+	/* Set or retrieve the container for the plot.
+	   @param  cont  (SVG element) the container for the plot
+	   @return  (SVGPlot) this plot object or
+	            (SVG element) the current container (if no parameters) */
+	container: function(cont) {
+		if (arguments.length == 0) {
+			return this._plotCont;
+		}
+		this._plotCont = cont;
+		return this;
+	},
 
 	/* Set or retrieve the main plotting area.
 	   @param  left    (number) > 1 is pixels, <= 1 is proportion of width or
@@ -190,18 +202,41 @@ $.extend(SVGPlot.prototype, {
 		if (!this._drawNow) {
 			return;
 		}
-		while (this._plotGroup.firstChild) {
-			this._plotGroup.removeChild(this._plotGroup.firstChild);
+		while (this._plotCont.firstChild) {
+			this._plotCont.removeChild(this._plotCont.firstChild);
 		}
-		if (!this._plotGroup.parent) {
-			this._wrapper._svg.appendChild(this._plotGroup);
+		if (!this._plotCont.parent) {
+			this._wrapper._svg.appendChild(this._plotCont);
+		}
+		// Set sizes if not already there
+		if (!this._plotCont.width) {
+			this._plotCont.setAttribute('width',
+				parseInt(this._plotCont.getAttribute('width')) || this._wrapper._width());
+		}
+		else if (this._plotCont.width.baseVal) {
+			this._plotCont.width.baseVal.value =
+				this._plotCont.width.baseVal.value || this._wrapper._width();
+		}
+		else {
+			this._plotCont.width = this._plotCont.width || this._wrapper._width();
+		}
+		if (!this._plotCont.height) {
+			this._plotCont.setAttribute('height',
+				parseInt(this._plotCont.getAttribute('height')) || this._wrapper._height());
+		}
+		else if (this._plotCont.height.baseVal) {
+			this._plotCont.height.baseVal.value =
+				this._plotCont.height.baseVal.value || this._wrapper._height();
+		}
+		else {
+			this._plotCont.height = this._plotCont.height || this._wrapper._height();
 		}
 		this._drawChartBackground();
 		var dims = this._getDims();
-		var clip = this._wrapper.other(this._plotGroup, 'clipPath', {id: 'clip' + this._uuid});
+		var clip = this._wrapper.other(this._plotCont, 'clipPath', {id: 'clip' + this._uuid});
 		this._wrapper.rect(clip, dims[this.X], dims[this.Y], dims[this.W], dims[this.H]);
-		this._plot = this._wrapper.group(this._plotGroup, 'foreground' + this._uuid,
-			{'clip-path': 'url(#clip' + this._uuid + ')'});
+		this._plot = this._wrapper.group(this._plotCont,
+			{'class': 'foreground', 'clip-path': 'url(#clip' + this._uuid + ')'});
 		this._drawAxis(true);
 		this._drawAxis(false);
 		for (var i = 0; i < this._functions.length; i++) {
@@ -211,20 +246,27 @@ $.extend(SVGPlot.prototype, {
 		this._drawLegend();
 	},
 
+	/* Decode an attribute value.
+	   @param  node  the node to examine
+	   @param  name  the attribute name
+	   @return  the actual value */
+	_getValue: function(node, name) {
+		return (!node[name] ? parseInt(node.getAttribute(name)) :
+			(node[name].baseVal ? node[name].baseVal.value : node[name]));
+	},
+
 	/* Calculate the actual dimensions of the plot area.
 	    @param  area  (number[4]) the area values to evaluate (optional)
 		@return  (number[4]) an array of dimension values: left, top, width, height */
 	_getDims: function(area) {
 		var otherArea = (area != null);
 		area = area || this._area;
-		var left = (area[this.L] > 1 ? area[this.L] :
-			this._wrapper._width() * area[this.L]);
-		var top = (area[this.T] > 1 ? area[this.T] :
-			this._wrapper._height() * area[this.T]);
-		var width = (area[this.R] > 1 ? area[this.R] :
-			this._wrapper._width() * area[this.R]) - left;
-		var height = (area[this.B] > 1 ? area[this.B] :
-			this._wrapper._height() * area[this.B]) - top;
+		var availWidth = this._getValue(this._plotCont, 'width');
+		var availHeight = this._getValue(this._plotCont, 'height');
+		var left = (area[this.L] > 1 ? area[this.L] : availWidth * area[this.L]);
+		var top = (area[this.T] > 1 ? area[this.T] : availHeight * area[this.T]);
+		var width = (area[this.R] > 1 ? area[this.R] : availWidth * area[this.R]) - left;
+		var height = (area[this.B] > 1 ? area[this.B] : availHeight * area[this.B]) - top;
 		if (this._equalXY && !otherArea) {
 			var scale = Math.min(width / (this.xAxis._scale.max - this.xAxis._scale.min),
 				height / (this.yAxis._scale.max - this.yAxis._scale.min));
@@ -247,7 +289,7 @@ $.extend(SVGPlot.prototype, {
 	   @param  noYGrid  (boolean) true to suppress the y-gridlines, false to draw them (optional)
 	   @return  (element) the background group element */
 	_drawChartBackground: function(noXGrid, noYGrid) {
-		var bg = this._wrapper.group(this._plotGroup, 'background' + this._uuid);
+		var bg = this._wrapper.group(this._plotCont, {'class': 'background'});
 		var dims = this._getDims();
 		this._wrapper.rect(bg, dims[this.X], dims[this.Y], dims[this.W], dims[this.H], this._areaFormat);
 		if (this._gridlines[0] && this.yAxis._ticks.major && !noYGrid) {
@@ -286,9 +328,9 @@ $.extend(SVGPlot.prototype, {
 		var axis2 = (horiz ? this.yAxis : this.xAxis);
 		var dims = this._getDims();
 		var scales = this._getScales();
-		var gl = this._wrapper.group(this._plot, id + this._uuid, axis._lineFormat);
-		var gt = this._wrapper.group(this._plot, id + 'Labels' + this._uuid,
-			$.extend({'text-anchor': (horiz ? 'middle' : 'end')}, axis._labelFormat));
+		var gl = this._wrapper.group(this._plot, $.extend({'class': id}, axis._lineFormat));
+		var gt = this._wrapper.group(this._plot, $.extend({'class': id + 'Labels',
+			'text-anchor': (horiz ? 'middle' : 'end')}, axis._labelFormat));
 		var zero = (horiz ? axis2._scale.max : -axis2._scale.min) *
 			scales[horiz ? 1 : 0] + (horiz ? dims[this.Y] : dims[this.X]);
 		this._wrapper.line(gl, (horiz ? dims[this.X] : zero), (horiz ? zero : dims[this.Y]),
@@ -322,11 +364,11 @@ $.extend(SVGPlot.prototype, {
 		}
 		if (axis._title) {
 			if (horiz) {
-				this._wrapper.text(this._plotGroup, dims[this.X] - axis._titleOffset,
+				this._wrapper.text(this._plotCont, dims[this.X] - axis._titleOffset,
 					zero, axis._title, {'text-anchor': 'end'});
 			}
 			else {
-				this._wrapper.text(this._plotGroup, zero,
+				this._wrapper.text(this._plotCont, zero,
 					dims[this.Y] + dims[this.H] + axis._titleOffset,
 					axis._title, {'text-anchor' : 'middle'});
 			}
@@ -355,15 +397,15 @@ $.extend(SVGPlot.prototype, {
 			first = false;
 		}
 		this._wrapper.path(this._plot, path,
-			$.extend({id: 'fn' + cur, fill: 'none', stroke: fn._stroke,
+			$.extend({'class': 'fn' + cur, fill: 'none', stroke: fn._stroke,
 			'stroke-width': fn._strokeWidth}, this._showStatus(fn._name),
 			fn._settings || {}));
 	},
 
 	/* Draw the plot title - centred. */
 	_drawTitle: function() {
-		this._wrapper.text(this._plotGroup, this._wrapper._width() / 2, this._title.offset,
-			this._title.value, this._title.settings);
+		this._wrapper.text(this._plotCont, this._getValue(this._plotCont, 'width') / 2,
+			this._title.offset, this._title.value, this._title.settings);
 	},
 
 	/* Draw the chart legend. */
@@ -371,7 +413,7 @@ $.extend(SVGPlot.prototype, {
 		if (!this.legend._show) {
 			return;
 		}
-		var g = this._wrapper.group(this._plotGroup, 'legend' + this._uuid);
+		var g = this._wrapper.group(this._plotCont, {'class': 'legend'});
 		var dims = this._getDims(this.legend._area);
 		this._wrapper.rect(g, dims[this.X], dims[this.Y], dims[this.W], dims[this.H],
 			this.legend._bgSettings);
@@ -379,7 +421,7 @@ $.extend(SVGPlot.prototype, {
 		var numFn = this._functions.length;
 		var offset = (horiz ? dims[this.W] : dims[this.H]) / numFn;
 		var xBase = dims[this.X] + 5;
-		var yBase = dims[this.Y] + (horiz ? dims[this.H] / 2 : offset / 2);
+		var yBase = dims[this.Y] + ((horiz ? dims[this.H] : offset) + this.legend._sampleSize) / 2;
 		for (var i = 0; i < numFn; i++) {
 			var fn = this._functions[i];
 			this._wrapper.rect(g, xBase + (horiz ? i * offset : 0),

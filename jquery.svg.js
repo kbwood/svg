@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery v1.3.0.
+   SVG for jQuery v1.3.1.
    Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -38,22 +38,11 @@ $.extend(SVGManager.prototype, {
 
 	/* Add the SVG object to its container. */
 	_attachSVG: function(container, settings) {
-		if ($(container).is('.' + this.markerClassName)) {
+		if ($(container).hasClass(this.markerClassName)) {
 			return;
 		}
 		$(container).addClass(this.markerClassName);
-		if ($.browser.msie) {
-			if (!container.id) {
-				container.id = 'svg' + (uuid++);
-			}
-			this._settings[container.id] = settings;
-			container.innerHTML = '<embed type="image/svg+xml" width="' +
-				container.clientWidth + '" height="' + container.clientHeight +
-				'" src="' + (settings.initPath || '') + 'blank.svg"/>';
-		}
-		else if (document.implementation.hasFeature('http://www.w3.org/TR/SVG11/feature#SVG', '1.1') ||
-				($.browser.mozilla && parseInt($.browser.version.substr(2)) >= 9) || // FF 3+
-				($.browser.safari && parseInt($.browser.version) >= 525)) { // Safari 3.1.1+
+		try {
 			var svg = document.createElementNS(this.svgNS, 'svg');
 			svg.setAttribute('version', '1.1');
 			svg.setAttribute('width', container.clientWidth);
@@ -61,8 +50,20 @@ $.extend(SVGManager.prototype, {
 			container.appendChild(svg);
 			this._afterLoad(container, svg, settings);
 		}
-		else {
-			container.innerHTML = '<p class="svg_error">' + this.local.notSupportedText + '</p>';
+		catch (e) {
+			if ($.browser.msie) {
+				if (!container.id) {
+					container.id = 'svg' + (this._uuid++);
+				}
+				this._settings[container.id] = settings;
+				container.innerHTML = '<embed type="image/svg+xml" width="' +
+					container.clientWidth + '" height="' + container.clientHeight +
+					'" src="' + (settings.initPath || '') + 'blank.svg"/>';
+			}
+			else {
+				container.innerHTML = '<p class="svg_error">' +
+					this.local.notSupportedText + '</p>';
+			}
 		}
 	},
 
@@ -79,7 +80,7 @@ $.extend(SVGManager.prototype, {
 				svg = document.embeds[i].getSVGDocument();
 			}
 			catch(e) {
-				setTimeout('$.svg._registerSVG()', 250); // Renesis takes longer to load
+				setTimeout($.svg._registerSVG, 250); // Renesis takes longer to load
 				return;
 			}
 			svg = (svg ? svg.documentElement : null);
@@ -121,7 +122,7 @@ $.extend(SVGManager.prototype, {
 	   @param  container  (element) the container for the SVG object */
 	_destroySVG: function(container) {
 		var $container = $(container);
-		if (!$container.is('.' + this.markerClassName)) {
+		if (!$container.hasClass(this.markerClassName)) {
 			return;
 		}
 		$container.removeClass(this.markerClassName).empty();
@@ -194,6 +195,24 @@ $.extend(SVGWrapper.prototype, {
 	   @return  (element) the element reference, or null if not found */
 	getElementById: function(id) {
 		return this._svg.ownerDocument.getElementById(id);
+	},
+
+	/* Change the attributes for a SVG node.
+	   @param  element   (SVG element) the node to change
+	   @param  settings  (object) the new settings
+	   @return  (SVGWrapper) this root */
+	change: function(element, settings) {
+		if (element) {
+			for (var name in settings) {
+				if (settings[name] == null) {
+					element.removeAttribute(name);
+				}
+				else {
+					element.setAttribute(name, settings[name]);
+				}
+			}
+		}
+		return this;
 	},
 
 	/* Check for parent being absent and adjust arguments accordingly. */
@@ -762,7 +781,14 @@ $.extend(SVGWrapper.prototype, {
 		}
 		else if (node.nodeType == 4) { // CDATA
 			if ($.trim(node.nodeValue)) {
-				newNode = this._svg.ownerDocument.createCDATASection(node.nodeValue);
+				try {
+					newNode = this._svg.ownerDocument.createCDATASection(node.nodeValue);
+				}
+				catch (e) {
+					newNode = this._svg.ownerDocument.createTextNode(
+						node.nodeValue.replace(/&/g, '&amp;').
+						replace(/</g, '&lt;').replace(/>/g, '&gt;'));
+				}
 			}
 		}
 		return newNode;
@@ -872,9 +898,12 @@ $.extend(SVGWrapper.prototype, {
 	},
 
 	/* Serialise the current diagram into an SVG text document.
+	   @param  node  (SVG element) the starting node (optional)
 	   @return  (string) the SVG as text */
-	toSVG: function() {
-		return this._toSVG(this._svg);
+	toSVG: function(node) {
+		node = node || this._svg;
+		return (typeof XMLSerializer == 'undefined' ? this._toSVG(node) :
+			new XMLSerializer().serializeToString(node));
 	},
 
 	/* Serialise one node in the SVG hierarchy. */
