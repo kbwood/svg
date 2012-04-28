@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG plotting extension for jQuery v1.4.1.
+   SVG plotting extension for jQuery v1.4.2.
    Written by Keith Wood (kbwood{at}iinet.com.au) December 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
@@ -133,19 +133,26 @@ $.extend(SVGPlot.prototype, {
 	   @param  value     (string) the title
 	   @param  offset    (number) the vertical positioning of the title
                           > 1 is pixels, <= 1 is proportion of width (optional)
+	   @param  colour    (string) the colour of the title (optional)
 	   @param  settings  (object) formatting for the title (optional)
 	   @return  (SVGPlot) this plot object or
 	            (object) value, offset, and settings for the title (if no parameters) */
-	title: function(value, offset, settings) {
+	title: function(value, offset, colour, settings) {
 		if (arguments.length == 0) {
 			return this._title;
 		}
-		if (typeof offset == 'object') {
-			settings = offset;
+		if (typeof offset != 'number') {
+			settings = colour;
+			colour = offset;
 			offset = null;
 		}
+		if (typeof colour != 'string') {
+			settings = colour;
+			colour = null;
+		}
 		this._title = {value: value, offset: offset || this._title.offset,
-			settings: $.extend({textAnchor: 'middle'}, settings || {})};
+			settings: $.extend({textAnchor: 'middle'},
+			(colour ? {fill: colour} : {}), settings || {})};
 		this._drawPlot();
 		return this;
 	},
@@ -365,12 +372,12 @@ $.extend(SVGPlot.prototype, {
 		if (axis._title) {
 			if (horiz) {
 				this._wrapper.text(this._plotCont, dims[this.X] - axis._titleOffset,
-					zero, axis._title, {textAnchor: 'end'});
+					zero, axis._title, $.extend({textAnchor: 'end'}, axis._titleFormat || {}));
 			}
 			else {
 				this._wrapper.text(this._plotCont, zero,
 					dims[this.Y] + dims[this.H] + axis._titleOffset,
-					axis._title, {textAnchor : 'middle'});
+					axis._title, $.extend({textAnchor : 'middle'}, axis._titleFormat || {}));
 			}
 		}
 	},
@@ -654,33 +661,46 @@ $.extend(SVGPlotAxis.prototype, {
 	/* Set or retrieve the title for this axis.
 	   @param  title   (string) the title text
 	   @param  offset  (number) the distance to offset the title position (optional)
+	   @param  colour  (string) how to colour the title (optional) 
 	   @param  format  (object) formatting settings for the title (optional)
 	   @return  (SVGPlotAxis) this axis object or
 	            (object) title, offset, and format values (if no parameters) */
-	title: function(title, offset, format) {
+	title: function(title, offset, colour, format) {
 		if (arguments.length == 0) {
 			return {title: this._title, offset: this._titleOffset, format: this._titleFormat};
 		}
-		if (typeof offset == 'object') {
-			format = offset;
+		if (typeof offset != 'number') {
+			format = colour;
+			colour = offset;
 			offset = null;
+		}
+		if (typeof colour != 'string') {
+			format = colour;
+			colour = null;
 		}
 		this._title = title;
 		this._titleOffset = (offset != null ? offset : this._titleOffset);
-		this._titleFormat = format || this._titleFormat;
+		if (colour || format) {
+			this._titleFormat = $.extend(format || {}, (colour ? {fill: colour} : {}));
+		}
 		this._plot._drawPlot();
 		return this;
 	},
 
 	/* Set or retrieve the label format for this axis.
-	   @param  format  (object) formatting settings for the labels
+	   @param  colour  (string) how to colour the labels (optional) 
+	   @param  format  (object) formatting settings for the labels (optional)
 	   @return  (SVGPlotAxis) this axis object or
 	            (object) format values (if no parameters) */
-	format: function(format) {
+	format: function(colour, format) {
 		if (arguments.length == 0) {
 			return this._labelFormat;
 		}
-		this._labelFormat = format;
+		if (typeof colour != 'string') {
+			format = colour;
+			colour = null;
+		}
+		this._labelFormat = $.extend(format || {}, (colour ? {fill: colour} : {}));
 		this._plot._drawPlot();
 		return this;
 	},
@@ -695,7 +715,7 @@ $.extend(SVGPlotAxis.prototype, {
 		if (arguments.length == 0) {
 			return this._lineFormat;
 		}
-		if (typeof width == 'object') {
+		if (typeof width != 'number') {
 			settings = width;
 			width = null;
 		}
