@@ -1,5 +1,5 @@
 ﻿/* http://keith-wood.name/svg.html
-   jQuery DOM compatibility for jQuery SVG v1.4.4.
+   jQuery DOM compatibility for jQuery SVG v1.4.5.
    Written by Keith Wood (kbwood{at}iinet.com.au) April 2009.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -93,7 +93,7 @@ $.fn.hasClass = function(origHasClass) {
 $.fn.attr = function(origAttr) {
 	return function(name, value, type) {
 		if (typeof name === 'string' && value === undefined) {
-			var val = origAttr.apply(this, [name, value, type]);
+			var val = origAttr.apply(this, [name]);
 			if (val && val.baseVal && val.baseVal.numberOfItems != null) { // Multiple values
 				value = '';
 				val = val.baseVal;
@@ -165,9 +165,9 @@ $.extend($.cssNumber, {
 /* Support retrieving CSS/attribute values on SVG nodes. */
 if ($.cssProps) {
 	$.css = function(origCSS) {
-		return function(elem, name) {
+		return function(elem, name, extra) {
 			var value = (name.match(/^svg.*/) ? $(elem).attr($.cssProps[name] || name) : '');
-			return value || origCSS(elem, name);
+			return value || origCSS(elem, name, extra);
 		};
 	}($.css);
 }
@@ -289,32 +289,45 @@ $.expr.filter.ATTR = function(origFilterAttr) {
 }($.expr.filter.ATTR);
 
 /*
-	In the event.add function (line 2646, v1.6.2):
+	In the removeData function (line 1881, v1.7.2):
+
+				if ( jQuery.support.deleteExpando ) {
+					delete elem[ internalKey ];
+				} else {
+					try { // SVG
+						elem.removeAttribute( internalKey );
+					} catch (e) {
+						elem[ internalKey ] = null;
+					}
+				}
+
+	In the event.add function (line 2985, v1.7.2):
 
 				if ( !special.setup || special.setup.call( elem, data, namespaces, eventHandle ) === false ) {
 					// Bind the global event handler to the element
 					try { // SVG
 						elem.addEventListener( type, eventHandle, false );
-
 					} catch(e) {
-						if (elem.attachEvent)
+						if ( elem.attachEvent ) {
 							elem.attachEvent( "on" + type, eventHandle );
+						}
 					}
 				}
 
-	In the event.remove function (line 2776, v1.6.2):
+	In the event.remove function (line 3074, v1.7.2):
 
-				if ( !special.teardown || special.teardown.call( elem, namespaces ) === false ) {
-					try { // SVG
-						elem.removeEventListener(type, elemData.handle, false);
-					}
-					catch (e) {
-						if (elem.detachEvent)
-							elem.detachEvent("on" + type, elemData.handle);
+			if ( !special.teardown || special.teardown.call( elem, namespaces ) === false ) {
+				try { // SVG
+					elem.removeEventListener(type, elemData.handle, false);
+				}
+				catch (e) {
+					if (elem.detachEvent) {
+						elem.detachEvent("on" + type, elemData.handle);
 					}
 				}
+			}
 
-	In the event.fix function (line 3036, v.1.6.2)
+	In the event.fix function (line 3394, v1.7.2):
 
 		if (event.target.namespaceURI == 'http://www.w3.org/2000/svg') { // SVG
 			event.button = [1, 4, 2][event.button];
@@ -322,11 +335,11 @@ $.expr.filter.ATTR = function(origFilterAttr) {
 
 		// Add which for click: 1 === left; 2 === middle; 3 === right
 		// Note: button is not normalized, so don't use it
-		if ( !event.which && event.button !== undefined ) {
-			event.which = (event.button & 1 ? 1 : ( event.button & 2 ? 3 : ( event.button & 4 ? 2 : 0 ) ));
+		if ( !event.which && button !== undefined ) {
+			event.which = ( button & 1 ? 1 : ( button & 2 ? 3 : ( button & 4 ? 2 : 0 ) ) );
 		}
 
-	In the Sizzle function (line 3873, v1.6.2):
+	In the Sizzle function (line 4083, v1.7.2):
 
 	if ( toString.call(checkSet) === "[object Array]" ) {
 		if ( !prune ) {
@@ -335,7 +348,7 @@ $.expr.filter.ATTR = function(origFilterAttr) {
 		} else if ( context && context.nodeType === 1 ) {
 			for ( i = 0; checkSet[i] != null; i++ ) {
 				if ( checkSet[i] && (checkSet[i] === true || checkSet[i].nodeType === 1 && Sizzle.contains(context, checkSet[i])) ) {
-					results.push( set[i] || set.item(i) ); // SVG
+				results.push( set[i] || set.item(i) ); // SVG
 				}
 			}
 
@@ -346,28 +359,27 @@ $.expr.filter.ATTR = function(origFilterAttr) {
 				}
 			}
 		}
+	} else {...
+
+	In the fallback for the Sizzle makeArray function (line 4877, v1.7.2):
+
+	if ( toString.call(array) === "[object Array]" ) {
+		Array.prototype.push.apply( ret, array );
 
 	} else {
-
-	In the fallback for the Sizzle makeArray function (line 4617, v1.6.2):
-
-		if ( toString.call(array) === "[object Array]" ) {
-			Array.prototype.push.apply( ret, array );
+		if ( typeof array.length === "number" ) {
+			for ( var l = array.length; i &lt; l; i++ ) {
+				ret.push( array[i] || array.item(i) ); // SVG
+			}
 
 		} else {
-			if ( typeof array.length === "number" ) {
-				for ( var l = array.length; i < l; i++ ) {
-					ret.push( array[i] || array.item(i) ); // SVG
-				}
-
-			} else {
-				for ( ; array[i]; i++ ) {
-					ret.push( array[i] );
-				}
+			for ( ; array[i]; i++ ) {
+				ret.push( array[i] );
 			}
 		}
+	}
 
-	In the jQuery.cleanData function (line 6220, v1.6.2)
+	In the jQuery.cleandata function (line 6538, v1.7.2):
 
 				if ( deleteExpando ) {
 					delete elem[ jQuery.expando ];
@@ -380,12 +392,14 @@ $.expr.filter.ATTR = function(origFilterAttr) {
 					}
 				}
 
-	In the fallback getComputedStyle function (line 6509, v.1.6.2)
+	In the fallback getComputedStyle function (line 6727, v1.7.2):
 
 		defaultView = (elem.ownerDocument ? elem.ownerDocument.defaultView : elem.defaultView); // SVG
-		if ( !defaultView ) {
-			return undefined;
-		}
+		if ( defaultView &&
+		(computedStyle = defaultView.getComputedStyle( elem, null )) ) {
+
+			ret = computedStyle.getPropertyValue( name );
+			...
 
 */
 

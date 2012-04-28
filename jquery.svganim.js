@@ -1,5 +1,5 @@
 ﻿/* http://keith-wood.name/svg.html
-   SVG attribute animations for jQuery v1.4.4.
+   SVG attribute animations for jQuery v1.4.5.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -279,7 +279,7 @@ $.svg._getColour = function(elem, attr) {
 	do {
 		colour = elem.attr(attr) || elem.css(attr);
 		// Keep going until we find an element that has colour, or exit SVG
-		if ((colour != '' && colour != 'none') || elem.hasClass('hasSVG')) {
+		if ((colour != '' && colour != 'none') || elem.hasClass($.svg.markerClassName)) {
 			break; 
 		}
 	} while (elem = elem.parent());
