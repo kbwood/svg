@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG filters for jQuery v1.2.0.
+   SVG filters for jQuery v1.2.1.
    Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -12,7 +12,7 @@ $.svg.addExtension('filters', SVGFilter);
 $.extend($.svg._wrapperClass.prototype, {
 
 	/* Add a filter definition.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  id        string - the ID for this filter
 	   @param  x         number - the x-coordinate for the left edge of the filter
 	   @param  y         number - the y-coordinate for the top edge of the filter
@@ -21,8 +21,10 @@ $.extend($.svg._wrapperClass.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	filter: function(parent, id, x, y, width, height, settings) {
-		return this._makeNode(parent, 'filter', $.extend(
-			{id: id, x: x, y: y, width: width, height: height}, settings || {}));
+		var args = this._args(arguments, ['id', 'x', 'y', 'width', 'height']);
+		return this._makeNode(args.parent, 'filter', $.extend(
+			{id: args.id, x: args.x, y: args.y, width: args.width, height: args.height},
+			args.settings || {}));
 	}
 });
 
@@ -35,19 +37,21 @@ function SVGFilter(wrapper) {
 $.extend(SVGFilter.prototype, {
 
 	/* Add a distant light filter.
-	   @param  parent     element - the parent node for the new filter
+	   @param  parent     element - the parent node for the new filter (optional)
 	   @param  result     string - the ID of this filter
 	   @param  azimuth    number - the angle (degrees) in the XY plane for the light source
 	   @param  elevation  number - the angle (degrees) in the YZ plane for the light source
 	   @param  settings   object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	distantLight: function(parent, result, azimuth, elevation, settings) {
-		return this._wrapper._makeNode(parent, 'feDistantLight', $.extend(
-			{result: result, azimuth: azimuth, elevation: elevation}, settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'azimuth', 'elevation']);
+		return this._wrapper._makeNode(args.parent, 'feDistantLight', $.extend(
+			{result: args.result, azimuth: args.azimuth, elevation: args.elevation},
+			args.settings || {}));
 	},
 
 	/* Add a point light filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  x         number - the x-coordinate for the light source
 	   @param  y         number - the y-coordinate for the light source
@@ -55,13 +59,14 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	pointLight: function(parent, result, x, y, z, settings) {
-		return this._wrapper._makeNode(parent, 'fePointLight', $.extend(
-			{result: result, x: x, y: y, z: z}, settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'x', 'y', 'z']);
+		return this._wrapper._makeNode(args.parent, 'fePointLight', $.extend(
+			{result: args.result, x: args.x, y: args.y, z: args.z}, args.settings || {}));
 	},
 
 	/* Add a spot light filter.
 	   Specify all of toX, toY, toZ or none of them.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  x         number - the x-coordinate for the light source
 	   @param  y         number - the y-coordinate for the light source
@@ -72,17 +77,17 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	spotLight: function(parent, result, x, y, z, toX, toY, toZ, settings) {
-		if (typeof toX == 'object') {
-			settings = toX;
-			toX = null;
-		}
-		var sets = $.extend({result: result, x: x, y: y, z: z}, 
-			(toX != null ? {pointsAtX: toX, pointsAtY: toY, pointsAtZ: toZ} : {}));
-		return this._wrapper._makeNode(parent, 'feSpotLight', $.extend(sets, settings || {}));
+		var args = this._wrapper._args(arguments,
+			['result', 'x', 'y', 'z', 'toX', 'toY', 'toZ'], ['toX']);
+		var sets = $.extend({result: args.result, x: args.x, y: args.y, z: args.z}, 
+			(args.toX != null ? {pointsAtX: args.toX, pointsAtY: args.toY,
+			pointsAtZ: args.toZ} : {}));
+		return this._wrapper._makeNode(args.parent, 'feSpotLight',
+			$.extend(sets, args.settings || {}));
 	},
 
 	/* Add a blend filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  mode      string - normal | multiply | screen | darken | lighten
 	   @param  in1       string - the first image to blend
@@ -90,12 +95,14 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	blend: function(parent, result, mode, in1, in2, settings) {
-		return this._wrapper._makeNode(parent, 'feBlend', $.extend(
-			{result: result, mode: mode, 'in': in1, in2: in2}, settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'mode', 'in1', 'in2']);
+		return this._wrapper._makeNode(args.parent, 'feBlend', $.extend(
+			{result: args.result, mode: args.mode, 'in': args.in1, in2: args.in2},
+			args.settings || {}));
 	},
 
 	/* Add a colour matrix filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  in1       string - the source to colour
 	   @param  type      string - matrix | saturate | hueRotate | luminanceToAlpha
@@ -106,24 +113,26 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	colorMatrix: function(parent, result, in1, type, values, settings) {
-		if (isArray(values)) {
+		var args = this._wrapper._args(arguments, ['result', 'in1', 'type', 'values']);
+		if (isArray(args.values)) {
 			var vs = '';
-			for (var i = 0; i < values.length; i++) {
-				vs += (i == 0 ? '' : ' ') + values[i].join(' ');
+			for (var i = 0; i < args.values.length; i++) {
+				vs += (i == 0 ? '' : ' ') + args.values[i].join(' ');
 			}
-			values = vs;
+			args.values = vs;
 		}
-		else if (typeof values == 'object') {
-			settings = values;
-			values = null;
+		else if (typeof args.values == 'object') {
+			args.settings = args.values;
+			args.values = null;
 		}
-		var sets = $.extend({result: result, 'in': in1, type: type},
-			(values != null ? {values: values} : {}));
-		return this._wrapper._makeNode(parent, 'feColorMatrix', $.extend(sets, settings || {}));
+		var sets = $.extend({result: args.result, 'in': args.in1, type: args.type},
+			(args.values != null ? {values: args.values} : {}));
+		return this._wrapper._makeNode(args.parent, 'feColorMatrix',
+			$.extend(sets, args.settings || {}));
 	},
 
 	/* Add a component transfer filter.
-	   @param  parent     element - the parent node for the new filter
+	   @param  parent     element - the parent node for the new filter (optional)
 	   @param  result     string - the ID of this filter
 	   @param  functions  object[] - one for each of RGB and A (alpha, optional)
 	                      for each entry: 
@@ -136,11 +145,12 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings   object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	componentTransfer: function(parent, result, functions, settings) {
-		var node = this._wrapper._makeNode(parent, 'feComponentTransfer', 
-			$.extend({result: result}, settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'functions']);
+		var node = this._wrapper._makeNode(args.parent, 'feComponentTransfer', 
+			$.extend({result: args.result}, args.settings || {}));
 		var rgba = ['R', 'G', 'B', 'A'];
-		for (var i = 0; i < Math.min(4, functions.length); i++) {
-			var props = functions[i];
+		for (var i = 0; i < Math.min(4, args.functions.length); i++) {
+			var props = args.functions[i];
 			var sets = $.extend({type: props[0]}, 
 				(props[0] == 'table' || props[0] == 'discrete' ? {tableValues: props[1].join(' ')} : 
 				(props[0] == 'linear' ? {slope: props[1], intercept: props[2]} : 
@@ -153,7 +163,7 @@ $.extend(SVGFilter.prototype, {
 
 	/* Add a composite filter.
 	   Specify all of k1, k2, k3, k4 or none of them.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  operator  string - over | in | out | atop | xor | arithmetic
 	   @param  in1       string - the first filter to compose
@@ -165,63 +175,64 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	composite: function(parent, result, operator, in1, in2, k1, k2, k3, k4, settings) {
-		if (typeof k1 == 'object') {
-			settings = k1;
-			k1 = null;
-		}
-		var sets = $.extend({result: result, operator: operator, 'in': in1, in2: in2},
-			(k1 != null ? {k1: k1, k2: k2, k3: k3, k4: k4} : {}));
-		return this._wrapper._makeNode(parent, 'feComposite', 
-			$.extend(sets, settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'operator',
+			'in1', 'in2', 'k1', 'k2', 'k3', 'k4'], ['k1']);
+		var sets = $.extend({result: args.result, operator: args.operator,
+			'in': args.in1, in2: args.in2},
+			(args.k1 != null ? {k1: args.k1, k2: args.k2, k3: args.k3, k4: args.k4} : {}));
+		return this._wrapper._makeNode(args.parent, 'feComposite', 
+			$.extend(sets, args.settings || {}));
 	},
 
 	/* Add a convolve matrix filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  order     int or 'int int' - the size(s) of the matrix
 	   @param  matrix    number[][] - the kernel matrix for the convolution
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	convolveMatrix: function(parent, result, order, matrix, settings) {
+		var args = this._wrapper._args(arguments, ['result', 'order', 'matrix']);
 		var mx = '';
-		for (var i = 0; i < matrix.length; i++) {
-			mx += (i == 0 ? '' : ' ') + matrix[i].join(' ');
+		for (var i = 0; i < args.matrix.length; i++) {
+			mx += (i == 0 ? '' : ' ') + args.matrix[i].join(' ');
 		}
-		matrix = mx;
-		return this._wrapper._makeNode(parent, 'feConvolveMatrix', $.extend(
-			{result: result, order: order, kernelMatrix: matrix}, settings || {}));
+		args.matrix = mx;
+		return this._wrapper._makeNode(args.parent, 'feConvolveMatrix', $.extend(
+			{result: args.result, order: args.order, kernelMatrix: args.matrix},
+			args.settings || {}));
 	},
 
 	/* Add a diffuse lighting filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  colour    string - the lighting colour (optional)
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	diffuseLighting: function(parent, result, colour, settings) {
-		if (typeof colour == 'object') {
-			settings = colour;
-			colour = null;
-		}
-		return this._wrapper._makeNode(parent, 'feDiffuseLighting', 
-			$.extend($.extend({result: result}, (colour ? {'lighting-color': colour} : {})), settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'colour'], ['colour']);
+		return this._wrapper._makeNode(args.parent, 'feDiffuseLighting', 
+			$.extend($.extend({result: args.result},
+			(args.colour ? {'lighting-color': args.colour} : {})), args.settings || {}));
 	},
 
 	/* Add a displacement map filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  in1       string - the source image
 	   @param  in2       string - the displacement image
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	displacementMap: function(parent, result, in1, in2, settings) {
-		return this._wrapper._makeNode(parent, 'feDisplacementMap', 
-			$.extend({result: result, 'in': in1, in2: in2}, settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'in1', 'in2']);
+		return this._wrapper._makeNode(args.parent, 'feDisplacementMap', 
+			$.extend({result: args.result, 'in': args.in1, in2: args.in2},
+			args.settings || {}));
 	},
 
 	/* Add a flood filter.
 	   Specify all of x, y, width, height or none of them.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  x         number - the left coordinate of the rectangle (optional)
 	   @param  y         number - the top coordinate of the rectangle (optional)
@@ -232,20 +243,23 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	flood: function(parent, result, x, y, width, height, colour, opacity, settings) {
+		var args = this._wrapper._args(arguments,
+			['result', 'x', 'y', 'width', 'height', 'colour', 'opacity']);
 		if (arguments.length < 6) {
-			colour = x;
-			opacity = y;
-			settings = width;
-			x = null;
+			args.colour = args.x;
+			args.opacity = args.y;
+			args.settings = args.width;
+			args.x = null;
 		}
-		var sets = $.extend({result: result, 'flood-color': colour, 'flood-opacity': opacity},
-			(x != null ? {x: x, y: y, width: width, height: height} : {}));
-		return this._wrapper._makeNode(parent, 'feFlood', 
-			$.extend(sets, settings || {}));
+		var sets = $.extend({result: args.result, 'flood-color': args.colour,
+			'flood-opacity': args.opacity}, (args.x != null ?
+			{x: args.x, y: args.y, width: args.width, height: args.height} : {}));
+		return this._wrapper._makeNode(args.parent, 'feFlood', 
+			$.extend(sets, args.settings || {}));
 	},
 
 	/* Add a Gaussian blur filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  in1       string - the source filter
 	   @param  stdDevX   number - the standard deviation along the x-axis
@@ -253,45 +267,45 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	gaussianBlur: function(parent, result, in1, stdDevX, stdDevY, settings) {
-		if (typeof stdDevY == 'object') {
-			settings = stdDevY;
-			stdDevY = null;
-		}
-		return this._wrapper._makeNode(parent, 'feGaussianBlur', $.extend(
-			{result: result, 'in': in1, stdDeviation: stdDevX + (stdDevY ? ' ' + stdDevY : '')}, 
-			settings || {}));
+		var args = this._wrapper._args(arguments,
+			['result', 'in1', 'stdDevX', 'stdDevY'], ['stdDevY']);
+		return this._wrapper._makeNode(args.parent, 'feGaussianBlur', $.extend(
+			{result: args.result, 'in': args.in1, stdDeviation: args.stdDevX +
+			(args.stdDevY ? ' ' + args.stdDevY : '')}, args.settings || {}));
 	},
 
 	/* Add an image filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  href      string - the URL of the image
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	image: function(parent, result, href, settings) {
-		var node = this._wrapper._makeNode(parent, 'feImage', $.extend(
-			{result: result}, settings || {}));
-		node.setAttributeNS($.svg.xlinkNS, 'href', href);
+		var args = this._wrapper._args(arguments, ['result', 'href']);
+		var node = this._wrapper._makeNode(args.parent, 'feImage', $.extend(
+			{result: args.result}, args.settings || {}));
+		node.setAttributeNS($.svg.xlinkNS, 'href', args.href);
 		return node;
 	},
 
 	/* Add a merge filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  refs      string[] - the IDs of the filters to merge
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	merge: function(parent, result, refs, settings) {
-		var node = this._wrapper._makeNode(parent, 'feMerge', $.extend(
-			{result: result}, settings || {}));
-		for (var i = 0; i < refs.length; i++) {
-			this._wrapper._makeNode(node, 'feMergeNode', {'in': refs[i]});
+		var args = this._wrapper._args(arguments, ['result', 'refs']);
+		var node = this._wrapper._makeNode(args.parent, 'feMerge', $.extend(
+			{result: args.result}, args.settings || {}));
+		for (var i = 0; i < args.refs.length; i++) {
+			this._wrapper._makeNode(node, 'feMergeNode', {'in': args.refs[i]});
 		}
 		return node;
 	},
 
 	/* Add a morphology filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  in1       string - the source filter
 	   @param  operator  string - erode | dilate
@@ -300,17 +314,16 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	morphology: function(parent, result, in1, operator, radiusX, radiusY, settings) {
-		if (typeof radiusY == 'object') {
-			settings = radiusY;
-			radiusY = null;
-		}
-		return this._wrapper._makeNode(parent, 'feMorphology', $.extend(
-			{result: result, 'in': in1, operator: operator, 
-			radius: radiusX + (radiusY ? ' ' + radiusY : '')}, settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'in1',
+			'operator', 'radiusX', 'radiusY'], ['radiusY']);
+		return this._wrapper._makeNode(args.parent, 'feMorphology', $.extend(
+			{result: args.result, 'in': args.in1, operator: args.operator, 
+			radius: args.radiusX + (args.radiusY ? ' ' + args.radiusY : '')},
+			args.settings || {}));
 	},
 
 	/* Add an offset filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  in1       string - the source filter
 	   @param  dX        number - the offset in the x-axis
@@ -318,13 +331,15 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	offset: function(parent, result, in1, dx, dy, settings) {
-		return this._wrapper._makeNode(parent, 'feOffset', $.extend(
-			{result: result, 'in': in1, dx: dx, dy: dy}, settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'in1', 'dx', 'dy']);
+		return this._wrapper._makeNode(args.parent, 'feOffset', $.extend(
+			{result: args.result, 'in': args.in1, dx: args.dx, dy: args.dy},
+			args.settings || {}));
 	},
 
 	/* Add a specular lighting filter.
 	   Numeric params are only optional if following numeric params are also omitted.
-	   @param  parent            element - the parent node for the new filter
+	   @param  parent            element - the parent node for the new filter (optional)
 	   @param  result            string - the ID of this filter
 	   @param  in1               string - the source filter
 	   @param  surfaceScale      number - the surface height when Ain = 1 (optional)
@@ -334,26 +349,17 @@ $.extend(SVGFilter.prototype, {
 	   @return  the new filter node */
 	specularLighting: function(parent, result, in1, surfaceScale, 
 			specularConstant, specularExponent, settings) {
-		if (typeof surfaceScale == 'object') {
-			settings = surfaceScale;
-			surfaceScale = null;
-		}
-		if (typeof specularConstant == 'object') {
-			settings = specularConstant;
-			specularConstant = null;
-		}
-		if (typeof specularExponent == 'object') {
-			settings = specularExponent;
-			specularExponent = null;
-		}
-		return this._wrapper._makeNode(parent, 'feSpecularLighting', $.extend(
-			{result: result, 'in': in1, surfaceScale: surfaceScale, 
-			specularConstant: specularConstant, specularExponent: specularExponent}, 
-			settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'in1',
+			'surfaceScale', 'specularConstant', 'specularExponent'],
+			['surfaceScale', 'specularConstant', 'specularExponent']);
+		return this._wrapper._makeNode(args.parent, 'feSpecularLighting', $.extend(
+			{result: args.result, 'in': args.in1, surfaceScale: args.surfaceScale, 
+			specularConstant: args.specularConstant, specularExponent: args.specularExponent},
+			args.settings || {}));
 	},
 
 	/* Add a tile filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  in1       string - the source filter
 	   @param  x         number - the left coordinate of the rectangle
@@ -363,13 +369,15 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	tile: function(parent, result, in1, x, y, width, height, settings) {
-		return this._wrapper._makeNode(parent, 'feTile', $.extend(
-			{result: result, 'in': in1, x: x, y: y, width: width, height: height}, 
-			settings || {}));
+		var args = this._wrapper._args(arguments,
+			['result', 'in1', 'x', 'y', 'width', 'height']);
+		return this._wrapper._makeNode(args.parent, 'feTile', $.extend(
+			{result: args.result, 'in': args.in1, x: args.x, y: args.y,
+			width: args.width, height: args.height}, args.settings || {}));
 	},
 
 	/* Add a turbulence filter.
-	   @param  parent    element - the parent node for the new filter
+	   @param  parent    element - the parent node for the new filter (optional)
 	   @param  result    string - the ID of this filter
 	   @param  type      string - fractalNoise | turbulence
 	   @param  baseFreq  number or 'number number' - the base frequency,
@@ -378,20 +386,17 @@ $.extend(SVGFilter.prototype, {
 	   @param  settings  object - additional settings for the filter (optional)
 	   @return  the new filter node */
 	turbulence: function(parent, result, type, baseFreq, octaves, settings) {
-		if (typeof octaves == 'object') {
-			settings = octaves;
-			octaves = null;
-		}
-		return this._wrapper._makeNode(parent, 'feTurbulence', $.extend(
-			{result: result, type: type, baseFrequency: baseFreq, numOctaves: octaves}, 
-			settings || {}));
+		var args = this._wrapper._args(arguments, ['result', 'type',
+			'baseFreq', 'octaves'], ['octaves']);
+		return this._wrapper._makeNode(args.parent, 'feTurbulence', $.extend(
+			{result: args.result, type: args.type, baseFrequency: args.baseFreq,
+			numOctaves: args.octaves}, args.settings || {}));
 	}
 });
 
 /* Determine whether an object is an array. */
 function isArray(a) {
-	return (($.browser.safari && typeof a == 'object' && a.length) ||
-		(a && a.constructor && a.constructor.toString().match(/\Array\(\)/)));
+	return (a && a.constructor == Array);
 }
 
 })(jQuery)

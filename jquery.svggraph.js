@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG graphing extension for jQuery v1.2.0.
+   SVG graphing extension for jQuery v1.2.1.
    Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -55,7 +55,7 @@ function SVGGraph(wrapper) {
 	this._gridlines = []; // The formatting of the x- and y-gridlines
 	this._series = []; // The series to be plotted, each is an object
 	this._onstatus = null; // The callback function for status updates
-	this._chartGroup = this._wrapper.group(null, 'graph'); // The main group for the graph
+	this._chartGroup = this._wrapper.group('_graph'); // The main group for the graph
 	
 	this.xAxis = new SVGGraphAxis(); // The main x-axis
 	this.xAxis.title('', 40);
@@ -259,8 +259,8 @@ $.extend(SVGGraph.prototype, {
 	},
 	
 	/* Calculate the actual dimensions of the chart area.
-	   @param  area  number[4] - the area values to evaluate (optional)
-	   @return  an array of dimension values: left, top, width, height */
+	    @param  area  number[4] - the area values to evaluate (optional)
+		@return  an array of dimension values: left, top, width, height */
 	_getDims: function(area) {
 		area = area || this._area;
 		var left = (area[this.L] > 1 ? area[this.L] :
@@ -1321,8 +1321,7 @@ $.extend(SVGPieChart.prototype, {
 
 /* Determine whether an object is an array. */
 function isArray(a) {
-	return (($.browser.safari && typeof a == 'object' && a.length) ||
-		(a && a.constructor && a.constructor.toString().match(/\Array\(\)/)));
+	return (a && a.constructor == Array);
 }
 
 // Basic chart types
