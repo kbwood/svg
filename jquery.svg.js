@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery v1.1.1.
+   SVG for jQuery v1.2.0.
    Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -11,18 +11,17 @@
    Use the singleton instance of this class, $.svg, 
    to interact with the SVG functionality. */
 function SVGManager() {
-	this._nextId = 0; // Next ID for a SVG root
-	this._svgs = []; // List of SVG roots indexed by ID
-	this._settings = []; // Settings to be remembered per SVG object:
-		// [0] is width, [1] is height, [2] is URL to load initially, [3] is callback function
-	this._extensions = []; // List of SVG extensions added to SVGRoot
+	this._settings = []; // Settings to be remembered per SVG object
+	this._extensions = []; // List of SVG extensions added to SVGWrapper
 		// for each entry [0] is extension name, [1] is extension class (function)
-		// the function takes one parameter - the SVGRoot instance
+		// the function takes one parameter - the SVGWrapper instance
 	this.regional = []; // Localisations, indexed by language, '' for default (English)
-	this.regional[''] = {notSupportedText: 'This browser does not support SVG',
-		errorLoadingText: 'Error loading'};
+	this.regional[''] = {errorLoadingText: 'Error loading',
+		notSupportedText: 'This browser does not support SVG'};
 	this.local = this.regional['']; // Current localisation
 }
+
+var PROP_NAME = 'svgwrapper';
 
 $.extend(SVGManager.prototype, {
 	/* Class name added to elements to indicate already configured with SVG. */
@@ -33,44 +32,45 @@ $.extend(SVGManager.prototype, {
 	/* XLink namespace. */
 	xlinkNS: 'http://www.w3.org/1999/xlink',
 	
-	/* SVG root class. */
-	_rootClass: SVGRoot,
+	/* SVG wrapper class. */
+	_wrapperClass: SVGWrapper,
 	
 	/* Add the SVG object to its container. */
 	_connectSVG: function(container, settings) {
 		if ($(container).is('.' + this.markerClassName)) {
 			return;
 		}
-		var id = this._nextId++;
-		container._svgId = id;
 		$(container).addClass(this.markerClassName);
-		settings = $.extend(settings, {container: container});
-		var svg = null;
 		if ($.browser.msie) {
-			container.innerHTML = '<embed type="image/svg+xml" width="' + container.clientWidth +
-				'" height="' + container.clientHeight + '" src="blank.svg"/>';
-			this._settings[id] = settings;
+			if (!container.id) {
+				container.id = 'svg' + new Date().getTime();
+			}
+			this._settings[container.id] = settings;
+			container.innerHTML = '<embed type="image/svg+xml" width="' +
+				container.clientWidth + '" height="' + container.clientHeight +
+				'" src="' + (settings.initPath || '') + 'blank.svg"/>';
 		}
 		else if (document.implementation.hasFeature('http://www.w3.org/TR/SVG11/feature#SVG', '1.1') ||
-				($.browser.mozilla && $.browser.version.substr(0, 3) == '1.9')) { // FF 3
-			svg = document.createElementNS(this.svgNS, 'svg');
+				($.browser.mozilla && parseInt($.browser.version.substr(2)) >= 9) || // FF 3+
+				($.browser.safari && parseInt($.browser.version) >= 525)) { // Safari 3.1.1+
+			var svg = document.createElementNS(this.svgNS, 'svg');
 			svg.setAttribute('version', '1.1');
 			svg.setAttribute('width', container.clientWidth);
 			svg.setAttribute('height', container.clientHeight);
 			container.appendChild(svg);
-			this._afterLoad(id, svg, settings);
+			this._afterLoad(container, svg, settings);
 		}
 		else {
 			container.innerHTML = '<p class="svg_error">' + this.local.notSupportedText + '</p>';
 		}
-		return id;
 	},
 
 	/* SVG callback after loading - register SVG root. */
 	_registerSVG: function() {
 		for (var i = 0; i < document.embeds.length; i++) { // Check all
-			var id = document.embeds[i].parentNode._svgId;
-			if (!id && id != 0) {
+			var container = document.embeds[i].parentNode;
+			if (!$(container).hasClass(this.markerClassName) || // Not SVG
+					$.data(container, PROP_NAME)) { // Already done
 				continue;
 			}
 			var svg = null;
@@ -82,64 +82,65 @@ $.extend(SVGManager.prototype, {
 				return;
 			}
 			svg = (svg ? svg.documentElement : null);
-			if (id != null && svg && !this._svgs[id]) { // Valid and not already done
-				this._afterLoad(id, svg);
+			if (svg) {
+				this._afterLoad(container, svg);
 			}
 		}
 	},
 
 	/* Post-processing once loaded. */
-	_afterLoad: function(id, svg, settings) {
-		var settings = settings || this._settings[id];
-		var root = this._svgs[id] = new this._rootClass(svg, settings.container);
+	_afterLoad: function(container, svg, settings) {
+		var settings = settings || this._settings[container.id];
+		this._settings[container.id] = null;
+		var wrapper = new this._wrapperClass(svg, container);
+		$.data(container, PROP_NAME, wrapper);
 		if (settings.loadURL) { // Load URL
-			root.load(settings.loadURL);
+			wrapper.load(settings.loadURL);
 		}
 		if (settings.settings) { // Additional settings
-			root.configure(settings.settings);
+			wrapper.configure(settings.settings);
 		}
 		if (settings.onLoad) { // Onload callback
-			settings.onLoad(settings.container);
+			settings.onLoad.apply(container, [wrapper]);
 		}
 	},
 	
-	/* Return the SVG root created for a given container.
+	/* Return the SVG wrapper created for a given container.
 	   @param  container  string - selector for the container or
 	                      element - the container for the SVG object or
 	                      jQuery collection - first entry is the container
-	   @return  the corresponding SVG root element, or null if not attached */
+	   @return  the corresponding SVG wrapper element, or null if not attached */
 	_getSVG: function(container) {
 		container = (typeof container == 'string' ? $(container)[0] :
 			(container.jquery ? container[0] : container));
-		return this._svgs[container._svgId];
+		return $.data(container, PROP_NAME);
 	},
 	
 	/* Remove the SVG functionality from a div.
 	   @param  container  element - the container for the SVG object */
 	_destroySVG: function(container) {
-		container = $(container);
-		if (!container.is('.' + this.markerClassName)) {
+		var $container = $(container);
+		if (!$container.is('.' + this.markerClassName)) {
 			return;
 		}
-		container.removeClass(this.markerClassName).empty()[0]._svgId = null;
+		$container.removeClass(this.markerClassName).empty();
+		$.removeData(container, PROP_NAME);
 	},
 
-	/* Extend the SVGRoot object with an embedded class.
+	/* Extend the SVGWrapper object with an embedded class.
 	   The constructor function must take a single parameter that is
 	   a reference to the owning SVG root object. This allows the 
 	   extension to access the basic SVG functionality.
-	   @param  name      string - the name of the SVGRoot attribute to access the new class
+	   @param  name      string - the name of the SVGWrapper attribute to access the new class
 	   @param  extClass  function - the extension class constructor */
 	addExtension: function(name, extClass) {
 		this._extensions[this._extensions.length] = [name, extClass];
 	}
 });
 
-
-
 /* The main SVG interface, which encapsulates the SVG element.
    Obtain a reference from $().svg('get') */
-function SVGRoot(svg, container) {
+function SVGWrapper(svg, container) {
 	this._svg = svg; // The SVG root node
 	this._container = container; // The containing div
 	for (var i = 0; i < $.svg._extensions.length; i++) {
@@ -148,7 +149,7 @@ function SVGRoot(svg, container) {
 	}
 }
 
-$.extend(SVGRoot.prototype, {
+$.extend(SVGWrapper.prototype, {
 
 	/* Retrieve the width of the SVG object. */
 	_width: function() {
@@ -158,6 +159,12 @@ $.extend(SVGRoot.prototype, {
 	/* Retrieve the height of the SVG object. */
 	_height: function() {
 		return this._container.clientHeight;
+	},
+	
+	/* Retrieve the root SVG element.
+	   @return  the top-level SVG element */
+	root: function() {
+		return this._svg;
 	},
 	
 	/* Configure the SVG root.
@@ -185,8 +192,7 @@ $.extend(SVGRoot.prototype, {
 	   @param  id  the element's identifier
 	   @return  the element reference, or null if not found */
 	getElementById: function(id) {
-		return ($.browser.msie || $.browser.opera ?
-			this._svg.getElementById(id) : document.getElementById(id));
+		return this._svg.ownerDocument.getElementById(id);
 	},
 	
 	/* Add a title.
@@ -884,7 +890,7 @@ $.extend(SVGRoot.prototype, {
 });
 
 /* Helper to generate an SVG path.
-   Obtain an instance from the SVGRoot object.
+   Obtain an instance from the SVGWrapper object.
    String calls together to generate the path and use its value:
    var path = root.createPath();
    root.path(null, path.moveTo(100, 100).lineTo(300, 100).lineTo(200, 300).close(), {fill: 'red'});
@@ -1071,7 +1077,7 @@ $.extend(SVGPath.prototype, {
 });
 
 /* Helper to generate an SVG text object.
-   Obtain an instance from the SVGRoot object.
+   Obtain an instance from the SVGWrapper object.
    String calls together to generate the text and use its value:
    var text = root.createText();
    root.text(null, x, y, text.string('This is ').

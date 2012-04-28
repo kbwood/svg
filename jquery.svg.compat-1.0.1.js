@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery compatibility from v1.0.1 to v1.1.0.
+   SVG for jQuery compatibility from v1.0.1 to v1.2.0.
    Written by Keith Wood (kbwood@virginbroadband.com.au) May 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -12,6 +12,7 @@ var svgGraphing = null;
 
 svgManager = $.svg;
 svgGraphing = $.svg.graphing;
+$.svg._rootClass = $.svg._wrapperClass;
 
 $.extend($.svg, {
 	/* Retrieve the SVG wrapper for a given division.

@@ -1,11 +1,11 @@
 /* http://keith-wood.name/svg.html
-   SVG attribute animations for jQuery v1.1.1.
+   SVG attribute animations for jQuery v1.2.0.
    Written by Keith Wood (kbwood@virginbroadband.com.au) June 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
 
- (function($) { // Hide scope, no $ conflict
+(function($) { // Hide scope, no $ conflict
 
 	// Enable animation for all of these SVG numeric properties
 	$.each(['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'x1', 'y1', 'x2', 'y2',
