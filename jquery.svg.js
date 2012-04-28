@@ -1,5 +1,5 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery v1.0.0.
+   SVG for jQuery v1.0.1.
    Written by Keith Wood (kbwood@iprimus.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -45,7 +45,8 @@ $.extend(SVGManager.prototype, {
 				'" height="' + container.clientHeight + '" src="blank.svg"/>';
 			this._settings[id] = [container, loadURL, settings, onLoad];
 		}
-		else if (document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#SVG","1.1")) {
+		else if (document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#SVG","1.1") ||
+				document.implementation.hasFeature("org.w3c.svg", "1.1")) {
 			svg = document.createElementNS(this.svgNS, 'svg');
 			svg.setAttribute('version', '1.1');
 			svg.setAttribute('width', container.clientWidth);
@@ -682,7 +683,12 @@ $.extend(SVGRoot.prototype, {
 			for (var i = 0; i < node.attributes.length; i++) {
 				var attr = node.attributes.item(i);
 				if (attr.nodeName != 'xmlns') {
-					newNode.setAttribute(this._checkName(attr.nodeName), attr.nodeValue);
+					if (attr.prefix == 'xlink') {
+						newNode.setAttributeNS(svgManager.xlinkNS, attr.localName, attr.nodeValue);
+					}
+					else {
+						newNode.setAttribute(this._checkName(attr.nodeName), attr.nodeValue);
+					}
 				}
 			}
 			for (var i = 0; i < node.childNodes.length; i++) {
@@ -721,11 +727,8 @@ $.extend(SVGRoot.prototype, {
 		var root = this;
 		var http = $.ajax({url: url, dataType: 'xml', success: function(data) {
 			if ($.browser.msie) { // Doesn't load properly!
-$.log(http.responseText);
 				data.loadXML(http.responseText);
-				if (data.parseError.errorCode != 0)
-				{
-$.log('parse error');
+				if (data.parseError.errorCode != 0) {
 					root.text(null, 10, 20, svgManager.local.errorLoadingText + ': ' +
 						data.parseError.reason);
 					return;
@@ -744,13 +747,11 @@ $.log('parse error');
 				root.add(null, nodes[i]);
 			}
 		}, error: function(http, message, exc) {
-$.log('ajax error ' + message);
-$.log(exc, true);
 			root.text(null, 10, 20, svgManager.local.errorLoadingText + ': ' +
 				message + (exc ? ' ' + exc.message : ''));
 		}});
 	},
-	
+
 	/* Delete a specified node.
 	   @param  node  element - the drawing node to remove */
 	remove: function(node) {
