@@ -1,5 +1,5 @@
-/* http://keith-wood.name/svg.html
-   SVG graphing extension for jQuery v1.4.2.
+﻿/* http://keith-wood.name/svg.html
+   SVG graphing extension for jQuery v1.4.3.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
@@ -549,12 +549,12 @@ $.extend(SVGGraph.prototype, {
 	},
 
 	/* Show the current value status on hover. */
-	_showStatus: function(value) {
-		var onStatus = (!this._onstatus ? '' :
-			this._onstatus.toString().replace(/function (.*)\([\s\S]*/m, '$1'));
-		return (!this._onstatus ? {} :
-			{onmouseover: 'window.parent.' + onStatus + '(\'' + value + '\');',
-			onmouseout: 'window.parent.' + onStatus  + '(\'\');'});
+	_showStatus: function(elem, label, value) {
+		var status = this._onstatus;
+		if (this._onstatus) {
+			$(elem).hover(function() { status.apply(this, [label, value]); },
+				function() { status.apply(this, ['', 0]); });
+		}
 	}
 });
 
@@ -943,11 +943,11 @@ $.extend(SVGColumnChart.prototype, {
 			$.extend({class_: 'series' + cur, fill: series._fill, stroke: series._stroke,
 			strokeWidth: series._strokeWidth}, series._settings || {}));
 		for (var i = 0; i < series._values.length; i++) {
-			graph._wrapper.rect(g,
+			var r = graph._wrapper.rect(g,
 				dims[graph.X] + xScale * (barGap + i * (numSer * barWidth + barGap) + (cur * barWidth)),
 				dims[graph.Y] + yScale * (graph.yAxis._scale.max - series._values[i]),
-				xScale * barWidth, yScale * series._values[i],
-				graph._showStatus(series._name + ' ' + series._values[i]));
+				xScale * barWidth, yScale * series._values[i]);
+			graph._showStatus(r, series._name, series._values[i]);
 		}
 	},
 
@@ -1051,12 +1051,12 @@ $.extend(SVGStackedColumnChart.prototype, {
 				series._settings || {}));
 			for (var i = 0; i < series._values.length; i++) {
 				accum[i] += series._values[i];
-				graph._wrapper.rect(g,
+				var r = graph._wrapper.rect(g,
 					dims[graph.X] + xScale * (barGap + i * (barWidth + barGap)),
 					dims[graph.Y] + yScale * (totals[i] - accum[i]) / totals[i],
-					xScale * barWidth, yScale * series._values[i] / totals[i],
-					graph._showStatus(series._name + ' ' +
-					roundNumber(series._values[i] / totals[i] * 100, 2) + '%'));
+					xScale * barWidth, yScale * series._values[i] / totals[i]);
+				graph._showStatus(r, series._name,
+					roundNumber(series._values[i] / totals[i] * 100, 2));
 			}
 		}
 	},
@@ -1145,11 +1145,11 @@ $.extend(SVGRowChart.prototype, {
 			stroke: series._stroke, strokeWidth: series._strokeWidth},
 			series._settings || {}));
 		for (var i = 0; i < series._values.length; i++) {
-			graph._wrapper.rect(g,
+			var r = graph._wrapper.rect(g,
 				dims[graph.X] + xScale * (0 - graph.yAxis._scale.min),
 				dims[graph.Y] + yScale * (barGap + i * (numSer * barWidth + barGap) + (cur * barWidth)),
-				xScale * series._values[i], yScale * barWidth,
-				graph._showStatus(series._name + ' ' + series._values[i]));
+				xScale * series._values[i], yScale * barWidth);
+			graph._showStatus(r, series._name, series._values[i]);
 		}
 	},
 
@@ -1262,12 +1262,12 @@ $.extend(SVGStackedRowChart.prototype, {
 				stroke: series._stroke, strokeWidth: series._strokeWidth},
 				series._settings || {}));
 			for (var i = 0; i < series._values.length; i++) {
-				graph._wrapper.rect(g,
+				var r = graph._wrapper.rect(g,
 					dims[graph.X] + xScale * accum[i] / totals[i],
 					dims[graph.Y] + yScale * (barGap + i * (barWidth + barGap)),
-					xScale * series._values[i] / totals[i], yScale * barWidth,
-					graph._showStatus(series._name + ' ' +
-					roundNumber(series._values[i] / totals[i] * 100, 2) + '%'));
+					xScale * series._values[i] / totals[i], yScale * barWidth);
+				graph._showStatus(r, series._name,
+					roundNumber(series._values[i] / totals[i] * 100, 2));
 				accum[i] += series._values[i];
 			}
 		}
@@ -1359,10 +1359,10 @@ $.extend(SVGLineChart.prototype, {
 				path.line(x, y);
 			}
 		}
-		graph._wrapper.path(this._chart, path,
+		var p = graph._wrapper.path(this._chart, path,
 			$.extend({id: 'series' + cur, fill: 'none', stroke: series._stroke,
-			strokeWidth: series._strokeWidth}, graph._showStatus(series._name),
-			series._settings || {}));
+			strokeWidth: series._strokeWidth}, series._settings || {}));
+		graph._showStatus(p, series._name, 0);
 	}
 });
 
@@ -1449,13 +1449,12 @@ $.extend(SVGPieChart.prototype, {
 				}
 				var x = cx + (exploding ? explodeDist * Math.cos((start + end) / 2) : 0);
 				var y = cy + (exploding ? explodeDist * Math.sin((start + end) / 2) : 0);
-				var status = series._name + ' ' +
-					roundNumber((end - start) / 2 / Math.PI * 100, 2) + '%';
-				graph._wrapper.path(gl[j], path.reset().move(x, y).
+				var p = graph._wrapper.path(gl[j], path.reset().move(x, y).
 					line(x + radius * Math.cos(start), y + radius * Math.sin(start)).
 					arc(radius, radius, 0, (end - start < Math.PI ? 0 : 1), 1,
-					x + radius * Math.cos(end), y + radius * Math.sin(end)).close(),
-					graph._showStatus(status));
+					x + radius * Math.cos(end), y + radius * Math.sin(end)).close());
+				graph._showStatus(p, series._name,
+					roundNumber((end - start) / 2 / Math.PI * 100, 2));
 			}
 			if (graph.xAxis) {
 				graph._wrapper.text(gt, cx, dims[graph.Y] + dims[graph.H] + graph.xAxis._titleOffset,

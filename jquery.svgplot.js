@@ -1,5 +1,5 @@
-/* http://keith-wood.name/svg.html
-   SVG plotting extension for jQuery v1.4.2.
+﻿/* http://keith-wood.name/svg.html
+   SVG plotting extension for jQuery v1.4.3.
    Written by Keith Wood (kbwood{at}iinet.com.au) December 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
@@ -403,10 +403,10 @@ $.extend(SVGPlot.prototype, {
 			path[(first ? 'move' : 'line') + 'To'](px, py);
 			first = false;
 		}
-		this._wrapper.path(this._plot, path,
+		var p = this._wrapper.path(this._plot, path,
 			$.extend({class_: 'fn' + cur, fill: 'none', stroke: fn._stroke,
-			strokeWidth: fn._strokeWidth}, this._showStatus(fn._name),
-			fn._settings || {}));
+			strokeWidth: fn._strokeWidth}, fn._settings || {}));
+		this._showStatus(p, fn._name);
 	},
 
 	/* Draw the plot title - centred. */
@@ -440,12 +440,12 @@ $.extend(SVGPlot.prototype, {
 	},
 
 	/* Show the current value status on hover. */
-	_showStatus: function(value) {
-		var onStatus = (!this._onstatus ? '' :
-			this._onstatus.toString().replace(/function (.*)\([\s\S]*/m, '$1'));
-		return (!this._onstatus ? {} :
-			{onmouseover: 'window.parent.' + onStatus + '(\'' + value + '\');',
-			onmouseout: 'window.parent.' + onStatus  + '(\'\');'});
+	_showStatus: function(elem, label) {
+		var status = this._onstatus;
+		if (this._onstatus) {
+			$(elem).hover(function(evt) { status.apply(this, [label]); },
+				function() { status.apply(this, ['']); });
+		}
 	}
 });
 

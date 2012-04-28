@@ -1,5 +1,5 @@
-/* http://keith-wood.name/svg.html
-   SVG filters for jQuery v1.4.2.
+﻿/* http://keith-wood.name/svg.html
+   SVG filters for jQuery v1.4.3.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
@@ -12,7 +12,7 @@ $.svg.addExtension('filters', SVGFilter);
 $.extend($.svg._wrapperClass.prototype, {
 
 	/* Add a filter definition.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  id        (string) the ID for this filter
 	   @param  x         (number) the x-coordinate for the left edge of the filter
 	   @param  y         (number) the y-coordinate for the top edge of the filter
@@ -37,7 +37,7 @@ function SVGFilter(wrapper) {
 $.extend(SVGFilter.prototype, {
 
 	/* Add a distant light filter.
-	   @param  parent     (element) the parent node for the new filter (optional)
+	   @param  parent     (element or jQuery) the parent node for the new filter (optional)
 	   @param  result     (string) the ID of this filter
 	   @param  azimuth    (number) the angle (degrees) in the XY plane for the light source
 	   @param  elevation  (number) the angle (degrees) in the YZ plane for the light source
@@ -51,7 +51,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a point light filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  x         (number) the x-coordinate for the light source
 	   @param  y         (number) the y-coordinate for the light source
@@ -66,7 +66,7 @@ $.extend(SVGFilter.prototype, {
 
 	/* Add a spot light filter.
 	   Specify all of toX, toY, toZ or none of them.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  x         (number) the x-coordinate for the light source
 	   @param  y         (number) the y-coordinate for the light source
@@ -87,7 +87,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a blend filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  mode      (string) normal | multiply | screen | darken | lighten
 	   @param  in1       (string) the first image to blend
@@ -102,7 +102,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a colour matrix filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  in1       (string) the source to colour
 	   @param  type      (string) matrix | saturate | hueRotate | luminanceToAlpha
@@ -132,7 +132,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a component transfer filter.
-	   @param  parent     (element) the parent node for the new filter (optional)
+	   @param  parent     (element or jQuery) the parent node for the new filter (optional)
 	   @param  result     (string) the ID of this filter
 	   @param  functions  (object[]) one for each of RGB and A (alpha, optional)
 	                      for each entry:
@@ -163,7 +163,7 @@ $.extend(SVGFilter.prototype, {
 
 	/* Add a composite filter.
 	   Specify all of k1, k2, k3, k4 or none of them.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  operator  (string) over | in | out | atop | xor | arithmetic
 	   @param  in1       (string) the first filter to compose
@@ -185,7 +185,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a convolve matrix filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  order     (int or 'int int') the size(s) of the matrix
 	   @param  matrix    (number[][]) the kernel matrix for the convolution
@@ -204,7 +204,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a diffuse lighting filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  colour    (string) the lighting colour (optional)
 	   @param  settings  (object) additional settings for the filter (optional)
@@ -217,7 +217,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a displacement map filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  in1       (string) the source image
 	   @param  in2       (string) the displacement image
@@ -232,7 +232,7 @@ $.extend(SVGFilter.prototype, {
 
 	/* Add a flood filter.
 	   Specify all of x, y, width, height or none of them.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  x         (number) the left coordinate of the rectangle (optional)
 	   @param  y         (number) the top coordinate of the rectangle (optional)
@@ -259,7 +259,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a Gaussian blur filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  in1       (string) the source filter
 	   @param  stdDevX   (number) the standard deviation along the x-axis
@@ -275,7 +275,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add an image filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  href      (string) the URL of the image
 	   @param  settings  (object) additional settings for the filter (optional)
@@ -289,7 +289,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a merge filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  refs      (string[]) the IDs of the filters to merge
 	   @param  settings  (object) additional settings for the filter (optional)
@@ -305,7 +305,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a morphology filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  in1       (string) the source filter
 	   @param  operator  (string) erode | dilate
@@ -323,7 +323,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add an offset filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  in1       (string) the source filter
 	   @param  dX        (number) the offset in the x-axis
@@ -339,7 +339,7 @@ $.extend(SVGFilter.prototype, {
 
 	/* Add a specular lighting filter.
 	   Numeric params are only optional if following numeric params are also omitted.
-	   @param  parent            (element) the parent node for the new filter (optional)
+	   @param  parent            (element or jQuery) the parent node for the new filter (optional)
 	   @param  result            (string) the ID of this filter
 	   @param  in1               (string) the source filter
 	   @param  surfaceScale      (number) the surface height when Ain = 1 (optional)
@@ -359,7 +359,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a tile filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  in1       (string) the source filter
 	   @param  x         (number) the left coordinate of the rectangle
@@ -377,7 +377,7 @@ $.extend(SVGFilter.prototype, {
 	},
 
 	/* Add a turbulence filter.
-	   @param  parent    (element) the parent node for the new filter (optional)
+	   @param  parent    (element or jQuery) the parent node for the new filter (optional)
 	   @param  result    (string) the ID of this filter
 	   @param  type      (string) fractalNoise | turbulence
 	   @param  baseFreq  (number or 'number number') the base frequency,

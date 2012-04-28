@@ -1,5 +1,5 @@
-/* http://keith-wood.name/svg.html
-   SVG attribute animations for jQuery v1.4.2.
+﻿/* http://keith-wood.name/svg.html
+   SVG attribute animations for jQuery v1.4.3.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2008.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
@@ -24,6 +24,7 @@ $.each(['x', 'y', 'width', 'height', 'rx', 'ry', 'cx', 'cy', 'r', 'x1', 'y1', 'x
 				if (/^[+-]=/.exec(offset)) {
 					fx.end = fx.start + parseFloat(offset.replace(/=/, ''));
 				}
+				$(fx.elem).css(realAttrName, '');
 				fx.set = true;
 			}
 			var value = (fx.pos * (fx.end - fx.start) + fx.start) + (fx.unit == '%' ? '%' : '');
@@ -185,6 +186,7 @@ $.each(['fill', 'stroke'],
 				var toNone = (fx.end == 'none');
 				fx.end = (toNone ? getColour(fx.elem.parentNode, attrName) : getRGB(fx.end));
 				fx.end[3] = toNone;
+				$(fx.elem).css(attrName, '');
 				fx.set = true;
 			}
 			var attr = fx.elem.attributes.getNamedItem(attrName);
