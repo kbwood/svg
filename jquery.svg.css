@@ -1,8 +1,9 @@
-/* http://home.iprimus.com.au/kbwood/jquery/svg.html
+/* http://keith-wood.name/svg.html
    SVG for jQuery v1.0.0.
-   Written by Keith Wood (kbwood@iprimus.com.au) August 2007.
-   Under the Creative Commons Licence http://creativecommons.org/licenses/by/3.0/
-   Share or Remix it but please Attribute the author. */
+   Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
+   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
+   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
+   Please attribute the author if you use it. */
 
 svg\:svg { display: none; }
 

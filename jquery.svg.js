@@ -1,16 +1,14 @@
 /* http://keith-wood.name/svg.html
-   SVG for jQuery v1.0.1.
-   Written by Keith Wood (kbwood@iprimus.com.au) August 2007.
+   SVG for jQuery v1.1.0.
+   Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
 
-var svgManager = null;
-
 (function($) { // Hide scope, no $ conflict
 
 /* SVG manager.
-   Use the singleton instance of this class, svgManager, 
+   Use the singleton instance of this class, $.svg, 
    to interact with the SVG functionality. */
 function SVGManager() {
 	this._nextId = 0; // Next ID for a SVG root
@@ -27,6 +25,9 @@ function SVGManager() {
 }
 
 $.extend(SVGManager.prototype, {
+	/* Class name added to elements to indicate already configured with SVG. */
+	markerClassName: 'hasSVG',
+	
 	/* SVG namespace. */
 	svgNS: 'http://www.w3.org/2000/svg',
 	/* XLink namespace. */
@@ -36,23 +37,28 @@ $.extend(SVGManager.prototype, {
 	_rootClass: SVGRoot,
 	
 	/* Add the SVG object to its container. */
-	_connectSVG: function(container, loadURL, onLoad, settings) {
+	_connectSVG: function(container, settings) {
+		if ($(container).is('.' + this.markerClassName)) {
+			return;
+		}
 		var id = this._nextId++;
 		container._svgId = id;
+		$(container).addClass(this.markerClassName);
+		settings = $.extend(settings, {container: container});
 		var svg = null;
 		if ($.browser.msie) {
 			container.innerHTML = '<embed type="image/svg+xml" width="' + container.clientWidth +
 				'" height="' + container.clientHeight + '" src="blank.svg"/>';
-			this._settings[id] = [container, loadURL, settings, onLoad];
+			this._settings[id] = settings;
 		}
-		else if (document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#SVG","1.1") ||
-				document.implementation.hasFeature("org.w3c.svg", "1.1")) {
+		else if (document.implementation.hasFeature('http://www.w3.org/TR/SVG11/feature#SVG', '1.1') ||
+				($.browser.mozilla && $.browser.version.substr(0, 3) == '1.9')) { // FF 3
 			svg = document.createElementNS(this.svgNS, 'svg');
 			svg.setAttribute('version', '1.1');
 			svg.setAttribute('width', container.clientWidth);
 			svg.setAttribute('height', container.clientHeight);
 			container.appendChild(svg);
-			this._afterLoad(id, svg, [container, loadURL, settings, onLoad]);
+			this._afterLoad(id, svg, settings);
 		}
 		else {
 			container.innerHTML = '<p class="svg_error">' + this.local.notSupportedText + '</p>';
@@ -64,7 +70,17 @@ $.extend(SVGManager.prototype, {
 	_registerSVG: function() {
 		for (var i = 0; i < document.embeds.length; i++) { // Check all
 			var id = document.embeds[i].parentNode._svgId;
-			var svg = document.embeds[i].getSVGDocument();
+			if (!id && id != 0) {
+				continue;
+			}
+			var svg = null;
+			try {
+				svg = document.embeds[i].getSVGDocument();
+			}
+			catch(e) {
+				setTimeout('$.svg._registerSVG()', 250); // Renesis takes longer to load
+				return;
+			}
 			svg = (svg ? svg.documentElement : null);
 			if (id != null && svg && !this._svgs[id]) { // Valid and not already done
 				this._afterLoad(id, svg);
@@ -75,15 +91,15 @@ $.extend(SVGManager.prototype, {
 	/* Post-processing once loaded. */
 	_afterLoad: function(id, svg, settings) {
 		var settings = settings || this._settings[id];
-		var root = this._svgs[id] = new this._rootClass(svg, settings[0]);
-		if (settings[1]) { // Load URL
-			root.load(settings[1]);
+		var root = this._svgs[id] = new this._rootClass(svg, settings.container);
+		if (settings.loadURL) { // Load URL
+			root.load(settings.loadURL);
 		}
-		if (settings[2]) { // Additional settings
-			root.configure(settings[2]);
+		if (settings.settings) { // Additional settings
+			root.configure(settings.settings);
 		}
-		if (settings[3]) { // Onload callback
-			settings[3](settings[0]);
+		if (settings.onLoad) { // Onload callback
+			settings.onLoad(settings.container);
 		}
 	},
 	
@@ -92,12 +108,22 @@ $.extend(SVGManager.prototype, {
 	                      element - the container for the SVG object or
 	                      jQuery collection - first entry is the container
 	   @return  the corresponding SVG root element, or null if not attached */
-	getSVGFor: function(container) {
+	_getSVG: function(container) {
 		container = (typeof container == 'string' ? $(container)[0] :
 			(container.jquery ? container[0] : container));
 		return this._svgs[container._svgId];
 	},
 	
+	/* Remove the SVG functionality from a div.
+	   @param  container  element - the container for the SVG object */
+	_destroySVG: function(container) {
+		container = $(container);
+		if (!container.is('.' + this.markerClassName)) {
+			return;
+		}
+		container.removeClass(this.markerClassName).empty()[0]._svgId = null;
+	},
+
 	/* Extend the SVGRoot object with an embedded class.
 	   The constructor function must take a single parameter that is
 	   a reference to the owning SVG root object. This allows the 
@@ -112,12 +138,12 @@ $.extend(SVGManager.prototype, {
 
 
 /* The main SVG interface, which encapsulates the SVG element.
-   Obtain a reference from svgManager.getSVGFor(). */
+   Obtain a reference from $().svg('get') */
 function SVGRoot(svg, container) {
 	this._svg = svg; // The SVG root node
 	this._container = container; // The containing div
-	for (var i = 0; i < svgManager._extensions.length; i++) {
-		var extension = svgManager._extensions[i];
+	for (var i = 0; i < $.svg._extensions.length; i++) {
+		var extension = $.svg._extensions[i];
 		this[extension[0]] = new extension[1](this);
 	}
 }
@@ -159,7 +185,8 @@ $.extend(SVGRoot.prototype, {
 	   @param  id  the element's identifier
 	   @return  the element reference, or null if not found */
 	getElementById: function(id) {
-		return this._svg.getElementById(id);
+		return ($.browser.msie || $.browser.opera ?
+			this._svg.getElementById(id) : document.getElementById(id));
 	},
 	
 	/* Add a title.
@@ -315,8 +342,8 @@ $.extend(SVGRoot.prototype, {
 		for (var i = 0; i < stops.length; i++) {
 			var stop = stops[i];
 			this._makeNode(node, 'stop', $.extend(
-				{offset: stop[0], stop_color: stop[1]}, 
-				(stop[2] != null ? {stop_opacity: stop[2]} : {})));
+				{offset: stop[0], 'stop-color': stop[1]}, 
+				(stop[2] != null ? {'stop-opacity': stop[2]} : {})));
 		}
 		return node;
 	},
@@ -425,7 +452,7 @@ $.extend(SVGRoot.prototype, {
 		}
 		var node = this._makeNode(parent, 'use', $.extend(
 			{x: x, y: y, width: width, height: height}, settings || {}));
-		node.setAttributeNS(svgManager.xlinkNS, 'href', ref);
+		node.setAttributeNS($.svg.xlinkNS, 'href', ref);
 		return node;
 	},
 
@@ -436,7 +463,7 @@ $.extend(SVGRoot.prototype, {
 	   @return  the new link node */
 	link: function(parent, ref, settings) {
 		var node = this._makeNode(parent, 'a', settings);
-		node.setAttributeNS(svgManager.xlinkNS, 'href', ref);
+		node.setAttributeNS($.svg.xlinkNS, 'href', ref);
 		return node;
 	},
 
@@ -452,7 +479,7 @@ $.extend(SVGRoot.prototype, {
 	image: function(parent, x, y, width, height, ref, settings) {
 		var node = this._makeNode(parent, 'image', $.extend(
 			{x: x, y: y, width: width, height: height}, settings || {}));
-		node.setAttributeNS(svgManager.xlinkNS, 'href', ref);
+		node.setAttributeNS($.svg.xlinkNS, 'href', ref);
 		return node;
 	},
 
@@ -467,31 +494,24 @@ $.extend(SVGRoot.prototype, {
 	},
 
 	/* Draw a rectangle.
+	   Specify both of rx and ry or neither.
 	   @param  parent    element - the parent node for the new shape
 	   @param  x         number - the x-coordinate for the left edge of the rectangle
 	   @param  y         number - the y-coordinate for the top edge of the rectangle
 	   @param  width     number - the width of the rectangle
 	   @param  height    number - the height of the rectangle
+	   @param  rx        number - the x-radius of the ellipse for the rounded corners (optional)
+	   @param  ry        number - the y-radius of the ellipse for the rounded corners (optional)
 	   @param  settings  object - additional settings for the shape (optional)
 	   @return  the new shape node */
-	rect: function(parent, x, y, width, height, settings) {
+	rect: function(parent, x, y, width, height, rx, ry, settings) {
+		if (typeof rx == 'object') {
+			settings = rx;
+			rx = ry = null;
+		}
 		return this._makeNode(parent, 'rect', $.extend(
-			{x: x, y: y, width: width, height: height}, settings || {}));
-	},
-
-	/* Draw a rounded rectangle.
-	   @param  parent    element - the parent node for the new shape
-	   @param  x         number - the x-coordinate for the left edge of the rectangle
-	   @param  y         number - the y-coordinate for the top edge of the rectangle
-	   @param  width     number - the width of the rectangle
-	   @param  height    number - the height of the rectangle
-	   @param  rx        number - the x-radius of the ellipse for the rounded corners
-	   @param  ry        number - the y-radius of the ellipse for the rounded corners
-	   @param  settings  object - additional settings for the shape (optional)
-	   @return  the new shape node */
-	roundrect: function(parent, x, y, width, height, rx, ry, settings) {
-		return this._makeNode(parent, 'rect', $.extend(
-			{x: x, y: y, width: width, height: height, rx: rx, ry: ry}, settings || {}));
+			{x: x, y: y, width: width, height: height},
+			(rx ? {rx: rx, ry: ry} : {}), settings || {}));
 	},
 
 	/* Draw a circle.
@@ -557,7 +577,7 @@ $.extend(SVGRoot.prototype, {
 			ps += points[i].join() + ' ';
 		}
 		return this._makeNode(parent, name, $.extend(
-			{points: ps}, settings || {}));
+			{points: $.trim(ps)}, settings || {}));
 	},
 	
 	/* Draw text.
@@ -589,7 +609,7 @@ $.extend(SVGRoot.prototype, {
 	   @return  the new text node */
 	textpath: function(parent, path, value, settings) {
 		var node = this._text(parent, 'textPath', value, settings || {});
-		node.setAttributeNS(svgManager.xlinkNS, 'href', path);
+		node.setAttributeNS($.svg.xlinkNS, 'href', path);
 		return node;
 	},
 	
@@ -609,14 +629,14 @@ $.extend(SVGRoot.prototype, {
 				}
 				else if (part[0] == 'tref') {
 					var child = this._makeNode(node, part[0], part[2]);
-					child.setAttributeNS(svgManager.xlinkNS, 'href', part[1]);
+					child.setAttributeNS($.svg.xlinkNS, 'href', part[1]);
 					node.appendChild(child);
 				}
 				else if (part[0] == 'textpath') {
-					var pathId = part[2].href;
-					part[2].href = null;
-					var child = this._makeNode(node, part[0], part[2]);
-					child.setAttributeNS(svgManager.xlinkNS, 'href', pathId);
+					var set = $.extend({}, part[2]);
+					set.href = null;
+					var child = this._makeNode(node, part[0], set);
+					child.setAttributeNS($.svg.xlinkNS, 'href', part[2].href);
 					child.appendChild(node.ownerDocument.createTextNode(part[1]));
 					node.appendChild(child);
 				}
@@ -634,27 +654,22 @@ $.extend(SVGRoot.prototype, {
 	   @param  settings  object - additional settings for the element (optional)
 	   @return  the new title node */
 	other: function(parent, name, settings) {
-		return this._makeNode(parent, other, settings || {});
+		return this._makeNode(parent, name, settings || {});
 	},
 
 	/* Create a shape node with the given settings. */
 	_makeNode: function(parent, name, settings) {
 		parent = parent || this._svg;
-		var node = this._svg.ownerDocument.createElementNS(svgManager.svgNS, name);
+		var node = this._svg.ownerDocument.createElementNS($.svg.svgNS, name);
 		for (var name in settings) {
 			var value = settings[name];
 			if (value != null && value != null && 
 					(typeof value != 'string' || value != '')) {
-				node.setAttribute(this._fromJSName(name), value);
+				node.setAttribute(name, value);
 			}
 		}
 		parent.appendChild(node);
 		return node;
-	},
-	
-	/* JavaScript identifiers can't use '-', so convert from '_'. */
-	_fromJSName: function(name) {
-		return name.replace(/^_/, '').replace(/_/g, '-');
 	},
 	
 	/* Add an existing SVG node to the diagram.
@@ -679,12 +694,12 @@ $.extend(SVGRoot.prototype, {
 		var newNode = null;
 		if (node.nodeType == 1) { // element
 			newNode = this._svg.ownerDocument.createElementNS(
-				node.namespaceURI || svgManager.svgNS, this._checkName(node.nodeName));
+				$.svg.svgNS, this._checkName(node.nodeName));
 			for (var i = 0; i < node.attributes.length; i++) {
 				var attr = node.attributes.item(i);
-				if (attr.nodeName != 'xmlns') {
+				if (attr.nodeName != 'xmlns' && attr.nodeValue) {
 					if (attr.prefix == 'xlink') {
-						newNode.setAttributeNS(svgManager.xlinkNS, attr.localName, attr.nodeValue);
+						newNode.setAttributeNS($.svg.xlinkNS, attr.localName, attr.nodeValue);
 					}
 					else {
 						newNode.setAttribute(this._checkName(attr.nodeName), attr.nodeValue);
@@ -729,7 +744,7 @@ $.extend(SVGRoot.prototype, {
 			if ($.browser.msie) { // Doesn't load properly!
 				data.loadXML(http.responseText);
 				if (data.parseError.errorCode != 0) {
-					root.text(null, 10, 20, svgManager.local.errorLoadingText + ': ' +
+					root.text(null, 10, 20, $.svg.local.errorLoadingText + ': ' +
 						data.parseError.reason);
 					return;
 				}
@@ -747,7 +762,7 @@ $.extend(SVGRoot.prototype, {
 				root.add(null, nodes[i]);
 			}
 		}, error: function(http, message, exc) {
-			root.text(null, 10, 20, svgManager.local.errorLoadingText + ': ' +
+			root.text(null, 10, 20, $.svg.local.errorLoadingText + ': ' +
 				message + (exc ? ' ' + exc.message : ''));
 		}});
 	},
@@ -795,7 +810,7 @@ $.extend(SVGRoot.prototype, {
 					var attr = node.attributes.item(i);
 					if (!($.trim(attr.nodeValue) == '' || attr.nodeValue.match(/^\[object/) ||
 							attr.nodeValue.match(/^function/))) {
-						svgDoc += ' ' + (attr.namespaceURI == svgManager.xlinkNS ? 'xlink:' : '') + 
+						svgDoc += ' ' + (attr.namespaceURI == $.svg.xlinkNS ? 'xlink:' : '') + 
 							attr.nodeName + '="' + attr.nodeValue + '"';
 					}
 				}
@@ -869,22 +884,24 @@ $.extend(SVGPath.prototype, {
 	},
 
 	/* Draw a horizontal line to a position.
-	   @param  x         number - x-coordinate to draw to
+	   @param  x         number - x-coordinate to draw to or
+	                     number[] - x-coordinates to draw to
 	   @param  relative  boolean - true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  this path */
 	horizTo: function(x, relative) {
-		this._path += (relative ? 'h' : 'H') + x;
+		this._path += (relative ? 'h' : 'H') + (isArray(x) ? x.join(' ') : x);
 		return this;
 	},
 
 	/* Draw a vertical line to a position.
-	   @param  y         number - y-coordinate to draw to
+	   @param  y         number - y-coordinate to draw to or
+	                     number[] - y-coordinates to draw to
 	   @param  relative  boolean - true for coordinates relative to the current point,
 	                     false for coordinates being absolute
 	   @return  this path */
 	vertTo: function(y, relative) {
-		this._path += (relative ? 'v' : 'V') + y;
+		this._path += (relative ? 'v' : 'V') + (isArray(y) ? y.join(' ') : y);
 		return this;
 	},
 
@@ -1067,35 +1084,31 @@ $.extend(SVGText.prototype, {
 });
 
 /* Attach the SVG functionality to a jQuery selection.
-   @param  loadURL   string - the URL of the initial document to load (optional)
-   @param  onLoad    function - a callback functional invoked following loading (optional)
-   @param  settings  object - the new settings to use for this SVG instance (optional)
+   @param  command  string - the command to run (optional, default 'attach')
+   @param  options  object - the new settings to use for these SVG instances
    @return jQuery object - for chaining further calls */
-$.fn.svg = function(loadURL, onLoad, settings) {
-	if (typeof loadURL == 'function') {
-		settings = onLoad;
-		onLoad = loadURL;
-		loadURL = null;
-	}
-	if (loadURL && typeof loadURL == 'object') {
-		settings = loadURL;
-		loadURL = onLoad = null;
-	}
-	if (onLoad && typeof onLoad == 'object') {
-		settings = onLoad;
-		onLoad = null;
+$.fn.svg = function(options) {
+	var otherArgs = Array.prototype.slice.call(arguments, 1);
+	if (typeof options == 'string' && options == 'get') {
+		return $.svg['_' + options + 'SVG'].apply($.svg, [this[0]].concat(otherArgs));
 	}
 	return this.each(function() {
-		svgManager._connectSVG(this, loadURL, onLoad, settings);
+		if (typeof options == 'string') {
+			$.svg['_' + options + 'SVG'].apply($.svg, [this].concat(otherArgs));
+		}
+		else {
+			$.svg._connectSVG(this, options || {});
+		} 
 	});
 };
 
 /* Determine whether an object is an array. */
 function isArray(a) {
-	return (a.constructor && a.constructor.toString().match(/\Array\(\)/));
+	return (($.browser.safari && typeof a == 'object' && a.length) ||
+		(a && a.constructor && a.constructor.toString().match(/\Array\(\)/)));
 }
 
 // Singleton primary SVG interface
-svgManager = new SVGManager();
+$.svg = new SVGManager();
 
 })(jQuery);

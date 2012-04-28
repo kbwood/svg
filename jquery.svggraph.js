@@ -1,18 +1,16 @@
 /* http://keith-wood.name/svg.html
-   SVG graphing extension for jQuery v1.0.1.
-   Written by Keith Wood (kbwood@iprimus.com.au) August 2007.
+   SVG graphing extension for jQuery v1.1.0.
+   Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
 
-var svgGraphing = null;
-
 (function($) { // Hide scope, no $ conflict
 
-svgManager.addExtension('graph', SVGGraph);
+$.svg.addExtension('graph', SVGGraph);
 
 // Singleton primary SVG graphing interface
-svgGraphing = new SVGGraphing();
+$.svg.graphing = new SVGGraphing();
 
 function SVGGraphing() {
 	this.regional = [];
@@ -44,13 +42,13 @@ $.extend(SVGGraphing.prototype, {
 function SVGGraph(root) {
 	this._root = root; // The attached SVG root object
 	this._drawNow = true; // True for immediate update, false to wait for redraw call
-	for (var id in svgGraphing._chartTypes) {
-		this._chartType = svgGraphing._chartTypes[id]; // Use first graph renderer
+	for (var id in $.svg.graphing._chartTypes) {
+		this._chartType = $.svg.graphing._chartTypes[id]; // Use first graph renderer
 		break;
 	}
 	this._chartOptions = {}; // Extra options for the graph type
 	// The graph title and settings
-	this._title = {value: '', offset: 25, settings: {text_anchor: 'middle'}};
+	this._title = {value: '', offset: 25, settings: {'text-anchor': 'middle'}};
 	this._area = [0.1, 0.1, 0.8, 0.9]; // The chart area: left, top, right, bottom, 
 		// > 1 in pixels, <= 1 as proportion
 	this._chartFormat = {fill: 'none', stroke: 'black'}; // The formatting for the chart area
@@ -81,10 +79,10 @@ $.extend(SVGGraph.prototype, {
 	B: 3,
 	
 	/* Standard percentage axis. */
-	_percentageAxis: new SVGGraphAxis(svgGraphing.region.percentageText, 0, 100, 10, 0),
+	_percentageAxis: new SVGGraphAxis($.svg.graphing.region.percentageText, 0, 100, 10, 0),
 
 	/* Set or retrieve the type of chart to be rendered.
-	   See svgGraphing.getChartTypes() for the list of available types.
+	   See $.svg.graphing.getChartTypes() for the list of available types.
 	   @param  id       string - the ID of the chart type
 	   @param  options  object - additional settings for this chart type (optional)
 	   @return  SVGGraph - this graph object or 
@@ -93,7 +91,7 @@ $.extend(SVGGraph.prototype, {
 		if (arguments.length == 0) {
 			return this._chartType;
 		}
-		var chartType = svgGraphing._chartTypes[id];
+		var chartType = $.svg.graphing._chartTypes[id];
 		if (chartType) {
 			this._chartType = chartType;
 			this._chartOptions = $.extend({}, options || {});
@@ -187,7 +185,7 @@ $.extend(SVGGraph.prototype, {
 			offset = null;
 		}
 		this._title = {value: value, offset: offset || this._title.offset,
-			settings: $.extend({text_anchor: 'middle'}, settings || {})};
+			settings: $.extend({'text-anchor': 'middle'}, settings || {})};
 		this._drawGraph();
 		return this;
 	},
@@ -261,8 +259,8 @@ $.extend(SVGGraph.prototype, {
 	},
 	
 	/* Calculate the actual dimensions of the chart area.
-	    @param  area  number[4] - the area values to evaluate (optional)
-		@return  an array of dimension values: left, top, width, height */
+	   @param  area  number[4] - the area values to evaluate (optional)
+	   @return  an array of dimension values: left, top, width, height */
 	_getDims: function(area) {
 		area = area || this._area;
 		var left = (area[this.L] > 1 ? area[this.L] :
@@ -327,7 +325,7 @@ $.extend(SVGGraph.prototype, {
 		}
 		if (this.yAxis) {
 			if (this.yAxis._title) {
-				this._root.text(this._chartGroup, 0, 0, this.yAxis._title, {text_anchor: 'middle',
+				this._root.text(this._chartGroup, 0, 0, this.yAxis._title, {'text-anchor': 'middle',
 					transform: 'translate(' + (dims[this.X] - this.yAxis._titleOffset) + ',' +
 					(dims[this.Y] + dims[this.H] / 2) + ') rotate(-90)'});
 			}
@@ -344,7 +342,7 @@ $.extend(SVGGraph.prototype, {
 		}
 		if (this.y2Axis) {
 			if (this.y2Axis._title) {
-				this._root.text(this._chartGroup, 0, 0, this.y2Axis._title, {text_anchor: 'middle',
+				this._root.text(this._chartGroup, 0, 0, this.y2Axis._title, {'text-anchor': 'middle',
 					transform: 'translate(' + (dims[this.X] + dims[this.W] + this.y2Axis._titleOffset) +
 					',' + (dims[this.Y] + dims[this.H] / 2) + ') rotate(-90)'});
 			}
@@ -364,7 +362,7 @@ $.extend(SVGGraph.prototype, {
 		var horiz = (y1 == y2);
 		var gl = this._root.group(this._chartGroup, id, axis._lineFormat);
 		var gt = this._root.group(this._chartGroup, id + 'Labels',
-			$.extend({text_anchor: (horiz ? 'middle' : 'end')}, axis._labelFormat));
+			$.extend({'text-anchor': (horiz ? 'middle' : 'end')}, axis._labelFormat));
 		this._root.line(gl, x1, y1, x2, y2);
 		if (axis._ticks.major) {
 			var bottomRight = (x2 > (this._root._width() / 2) && 
@@ -411,7 +409,7 @@ $.extend(SVGGraph.prototype, {
 	/* Retrieve the standard percentage axis.
 	   @return  percentage axis */
 	_getPercentageAxis: function() {
-		this._percentageAxis._title = svgGraphing.region.percentageText;
+		this._percentageAxis._title = $.svg.graphing.region.percentageText;
 		return this._percentageAxis;
 	},
 
@@ -447,7 +445,7 @@ $.extend(SVGGraph.prototype, {
 			this._root.rect(g, xBase + (horiz ? i * offset : 0),
 				yBase + (horiz ? 0 : i * offset) - this.legend._sampleSize,
 				this.legend._sampleSize, this.legend._sampleSize,
-				{fill: series._fill, stroke: series._stroke, stroke_width: 1});
+				{fill: series._fill, stroke: series._stroke, 'stroke-width': 1});
 			this._root.text(g, xBase + (horiz ? i * offset : 0) + this.legend._sampleSize + 5,
 				yBase + (horiz ? 0 : i * offset), series._name, this.legend._textSettings);
 		}
@@ -584,7 +582,7 @@ $.extend(SVGGraphAxis.prototype, {
 			settings = width;
 			width = null;
 		}
-		$.extend(this._lineFormat, {stroke: colour, stroke_width: width || 1});
+		$.extend(this._lineFormat, {stroke: colour, 'stroke-width': width || 1});
 		$.extend(this._lineFormat, settings || {});
 		return this;
 	}
@@ -660,7 +658,7 @@ $.extend(SVGGraphSeries.prototype, {
 	format: function(fill, stroke, strokeWidth, settings) {
 		if (arguments.length == 0) {
 			return $.extend({fill: this._fill, stroke: this._stroke,
-				stroke_width: this._strokeWidth}, this._settings);
+				'stroke-width': this._strokeWidth}, this._settings);
 		}
 		if (typeof strokeWidth == 'object') {
 			settings = strokeWidth;
@@ -806,7 +804,7 @@ $.extend(SVGColumnChart.prototype, {
 		var series = graph._series[cur];
 		var g = graph._root.group(this._chart, 'series' + cur,
 			$.extend({stroke: series._stroke,
-			stroke_width: series._strokeWidth}, series._settings || {}));
+			'stroke-width': series._strokeWidth}, series._settings || {}));
 		for (var i = 0; i < series._values.length; i++) {
 			graph._root.rect(g, 
 				dims[graph.X] + xScale * (barGap + i * (numSer * barWidth + barGap) + (cur * barWidth)),
@@ -822,11 +820,11 @@ $.extend(SVGColumnChart.prototype, {
 		if (axis._title) {
 			graph._root.text(graph._chartGroup, dims[graph.X] + dims[graph.W] / 2,
 				dims[graph.Y] + dims[graph.H] + axis._titleOffset,
-				axis._title, {text_anchor: 'middle'});
+				axis._title, {'text-anchor': 'middle'});
 		}
 		var gl = graph._root.group(graph._chartGroup, 'xAxis', axis._lineFormat);
 		var gt = graph._root.group(graph._chartGroup, 'xAxisLabels',
-			$.extend({text_anchor: 'middle'}, axis._labelFormat));
+			$.extend({'text-anchor': 'middle'}, axis._labelFormat));
 		graph._root.line(gl, dims[graph.X], dims[graph.Y] + dims[graph.H],
 			dims[graph.X] + dims[graph.W], dims[graph.Y] + dims[graph.H]);
 		if (axis._ticks.major) {
@@ -889,8 +887,8 @@ $.extend(SVGStackedColumnChart.prototype, {
 		this._chart = graph._root.group(graph._chartGroup, 'chart');
 		this._drawColumns(graph, numSer, numVal, barWidth, barGap, dims, xScale, yScale);
 		graph._drawTitle();
-		graph._root.text(graph._chartGroup, 0, 0, svgGraphing.region.percentageText,
-			{text_anchor: 'middle', transform: 'translate(' + (dims[graph.X] - graph.yAxis._titleOffset) +
+		graph._root.text(graph._chartGroup, 0, 0, $.svg.graphing.region.percentageText,
+			{'text-anchor': 'middle', transform: 'translate(' + (dims[graph.X] - graph.yAxis._titleOffset) +
 			',' +(dims[graph.Y] + dims[graph.H] / 2) + ') rotate(-90)'});
 		graph._drawAxis(graph._getPercentageAxis(), 'yAxis',
 			dims[graph.X], dims[graph.Y], dims[graph.X], dims[graph.Y] + dims[graph.H]);
@@ -908,7 +906,7 @@ $.extend(SVGStackedColumnChart.prototype, {
 		for (var s = 0; s < numSer; s++) {
 			var series = graph._series[s];
 			var g = graph._root.group(this._chart, 'series' + s,
-				$.extend({stroke: series._stroke, stroke_width: series._strokeWidth},
+				$.extend({stroke: series._stroke, 'stroke-width': series._strokeWidth},
 				series._settings || {}));
 			for (var i = 0; i < series._values.length; i++) {
 				accum[i] += series._values[i];
@@ -928,11 +926,11 @@ $.extend(SVGStackedColumnChart.prototype, {
 		if (axis._title) {
 			graph._root.text(graph._chartGroup, dims[graph.X] + dims[graph.W] / 2,
 				dims[graph.Y] + dims[graph.H] + axis._titleOffset,
-				axis._title, {text_anchor: 'middle'});
+				axis._title, {'text-anchor': 'middle'});
 		}
 		var gl = graph._root.group(graph._chartGroup, 'xAxis', axis._lineFormat);
 		var gt = graph._root.group(graph._chartGroup, 'xAxisLabels',
-			$.extend({text_anchor: 'middle'}, axis._labelFormat));
+			$.extend({'text-anchor': 'middle'}, axis._labelFormat));
 		graph._root.line(gl, dims[graph.X], dims[graph.Y] + dims[graph.H],
 		dims[graph.X] + dims[graph.W], dims[graph.Y] + dims[graph.H]);
 		if (axis._ticks.major) {
@@ -1002,7 +1000,7 @@ $.extend(SVGRowChart.prototype, {
 	_drawSeries: function(graph, cur, numSer, barWidth, barGap, dims, xScale, yScale) {
 		var series = graph._series[cur];
 		var g = graph._root.group(this._chart, 'series' + cur,
-			$.extend({stroke: series._stroke, stroke_width: series._strokeWidth},
+			$.extend({stroke: series._stroke, 'stroke-width': series._strokeWidth},
 			series._settings || {}));
 		for (var i = 0; i < series._values.length; i++) {
 			graph._root.rect(g,
@@ -1028,13 +1026,13 @@ $.extend(SVGRowChart.prototype, {
 		// Y-axis
 		var axis = graph.xAxis;
 		if (axis._title) {
-			graph._root.text(graph._chartGroup, 0, 0, axis._title, {text_anchor: 'middle',
+			graph._root.text(graph._chartGroup, 0, 0, axis._title, {'text-anchor': 'middle',
 				transform: 'translate(' + (dims[graph.X] - axis._titleOffset) + ',' +
 				(dims[graph.Y] + dims[graph.H] / 2) + ') rotate(-90)'});
 		}
 		var gl = graph._root.group(graph._chartGroup, 'yAxis', axis._lineFormat);
 		var gt = graph._root.group(graph._chartGroup, 'yAxisLabels',
-			$.extend({text_anchor: 'end'}, axis._labelFormat));
+			$.extend({'text-anchor': 'end'}, axis._labelFormat));
 		graph._root.line(gl, dims[graph.X], dims[graph.Y], dims[graph.X], dims[graph.Y] + dims[graph.H]);
 		if (axis._ticks.major) {
 			var offsets = graph._getTickOffsets(axis, false);
@@ -1098,7 +1096,7 @@ $.extend(SVGStackedRowChart.prototype, {
 		graph._drawTitle();
 		graph._root.text(graph._chartGroup, dims[graph.X] + dims[graph.W] / 2,
 			dims[graph.Y] + dims[graph.H] + graph.xAxis._titleOffset,
-			svgGraphing.region.percentageText, {text_anchor: 'middle'});
+			$.svg.graphing.region.percentageText, {'text-anchor': 'middle'});
 		graph._drawAxis(graph._getPercentageAxis(), 'xAxis',
 			dims[graph.X], dims[graph.Y] + dims[graph.H],
 			dims[graph.X] + dims[graph.W], dims[graph.Y] + dims[graph.H]);
@@ -1116,7 +1114,7 @@ $.extend(SVGStackedRowChart.prototype, {
 		for (var s = 0; s < numSer; s++) {
 			var series = graph._series[s];
 			var g = graph._root.group(this._chart, 'series' + s,
-				$.extend({stroke: series._stroke, stroke_width: series._strokeWidth},
+				$.extend({stroke: series._stroke, 'stroke-width': series._strokeWidth},
 				series._settings || {}));
 			for (var i = 0; i < series._values.length; i++) {
 				graph._root.rect(g,
@@ -1134,13 +1132,13 @@ $.extend(SVGStackedRowChart.prototype, {
 	_drawYAxis: function(graph, numVal, barWidth, barGap, dims, yScale) {
 		var axis = graph.xAxis;
 		if (axis._title) {
-			graph._root.text(graph._chartGroup, 0, 0, axis._title, {text_anchor: 'middle',
+			graph._root.text(graph._chartGroup, 0, 0, axis._title, {'text-anchor': 'middle',
 				transform: 'translate(' + (dims[graph.X] - axis._titleOffset) + ',' +
 				(dims[graph.Y] + dims[graph.H] / 2) + ') rotate(-90)'});
 		}
 		var gl = graph._root.group(graph._chartGroup, 'yAxis', axis._lineFormat);
 		var gt = graph._root.group(graph._chartGroup, 'yAxisLabels',
-			$.extend({text_anchor: 'end'}, axis._labelFormat));
+			$.extend({'text-anchor': 'end'}, axis._labelFormat));
 		graph._root.line(gl, dims[graph.X], dims[graph.Y], dims[graph.X], dims[graph.Y] + dims[graph.H]);
 		if (axis._ticks.major) {
 			var offsets = graph._getTickOffsets(axis, false);
@@ -1216,7 +1214,7 @@ $.extend(SVGLineChart.prototype, {
 		}
 		graph._root.path(this._chart, path, 
 			$.extend($.extend({id: 'series' + cur, fill: 'none', stroke: series._stroke, 
-			stroke_width: series._strokeWidth}, graph._showStatus(series._name),
+			'stroke-width': series._strokeWidth}, graph._showStatus(series._name),
 			series._settings || {})));
 	}
 });
@@ -1275,7 +1273,7 @@ $.extend(SVGPieChart.prototype, {
 		var yBase = dims[graph.H] / 2;
 		var radius = Math.min(xBase, yBase) - (explode.length > 0 ? explodeDist : 0);
 		var gt = graph._root.group(graph._chartGroup, 'xAxisLabels',
-			$.extend({text_anchor: 'middle'}, graph.xAxis._labelFormat));
+			$.extend({'text-anchor': 'middle'}, graph.xAxis._labelFormat));
 		var gl = [];
 		for (var i = 0; i < numVal; i++) {
 			var cx = dims[graph.X] + xBase + (i * (2 * Math.min(xBase, yBase) + pieGap)) + pieGap;
@@ -1285,7 +1283,7 @@ $.extend(SVGPieChart.prototype, {
 				var series = graph._series[j];
 				if (i == 0) {
 					gl[j] = graph._root.group(this._chart, 'series' + j,
-						$.extend({stroke: series._stroke, stroke_width: series._strokeWidth},
+						$.extend({stroke: series._stroke, 'stroke-width': series._strokeWidth},
 						series._settings || {}));
 				}
 				if (series._values[i] == 0) {
@@ -1323,15 +1321,16 @@ $.extend(SVGPieChart.prototype, {
 
 /* Determine whether an object is an array. */
 function isArray(a) {
-	return (a.constructor && a.constructor.toString().match(/\Array\(\)/));
+	return (($.browser.safari && typeof a == 'object' && a.length) ||
+		(a && a.constructor && a.constructor.toString().match(/\Array\(\)/)));
 }
 
 // Basic chart types
-svgGraphing.addChartType('column', new SVGColumnChart());
-svgGraphing.addChartType('stackedColumn', new SVGStackedColumnChart());
-svgGraphing.addChartType('row', new SVGRowChart());
-svgGraphing.addChartType('stackedRow', new SVGStackedRowChart());
-svgGraphing.addChartType('line', new SVGLineChart());
-svgGraphing.addChartType('pie', new SVGPieChart());
+$.svg.graphing.addChartType('column', new SVGColumnChart());
+$.svg.graphing.addChartType('stackedColumn', new SVGStackedColumnChart());
+$.svg.graphing.addChartType('row', new SVGRowChart());
+$.svg.graphing.addChartType('stackedRow', new SVGStackedRowChart());
+$.svg.graphing.addChartType('line', new SVGLineChart());
+$.svg.graphing.addChartType('pie', new SVGPieChart());
 
 })(jQuery)

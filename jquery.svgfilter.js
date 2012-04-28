@@ -1,15 +1,15 @@
 /* http://keith-wood.name/svg.html
-   SVG filters for jQuery v1.0.1.
-   Written by Keith Wood (kbwood@iprimus.com.au) August 2007.
+   SVG filters for jQuery v1.1.0.
+   Written by Keith Wood (kbwood@virginbroadband.com.au) August 2007.
    Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
    MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
    Please attribute the author if you use it. */
 
 (function($) { // Hide scope, no $ conflict
 
-svgManager.addExtension('filters', SVGFilter);
+$.svg.addExtension('filters', SVGFilter);
 
-$.extend(svgManager._rootClass.prototype, {
+$.extend($.svg._rootClass.prototype, {
 
 	/* Add a filter definition.
 	   @param  parent    element - the parent node for the new filter
@@ -43,7 +43,7 @@ $.extend(SVGFilter.prototype, {
 	   @return  the new filter node */
 	distantLight: function(parent, result, azimuth, elevation, settings) {
 		return this._root._makeNode(parent, 'feDistantLight', $.extend(
-			{result: result, azimuth: azimuth, elevantion: elevation}, settings || {}));
+			{result: result, azimuth: azimuth, elevation: elevation}, settings || {}));
 	},
 
 	/* Add a point light filter.
@@ -91,7 +91,7 @@ $.extend(SVGFilter.prototype, {
 	   @return  the new filter node */
 	blend: function(parent, result, mode, in1, in2, settings) {
 		return this._root._makeNode(parent, 'feBlend', $.extend(
-			{result: result, mode: mode, _in: in1, in2: in2}, settings || {}));
+			{result: result, mode: mode, 'in': in1, in2: in2}, settings || {}));
 	},
 
 	/* Add a colour matrix filter.
@@ -117,7 +117,7 @@ $.extend(SVGFilter.prototype, {
 			settings = values;
 			values = null;
 		}
-		var sets = $.extend({result: result, _in: in1, type: type},
+		var sets = $.extend({result: result, 'in': in1, type: type},
 			(values != null ? {values: values} : {}));
 		return this._root._makeNode(parent, 'feColorMatrix', $.extend(sets, settings || {}));
 	},
@@ -142,9 +142,9 @@ $.extend(SVGFilter.prototype, {
 		for (var i = 0; i < Math.min(4, functions.length); i++) {
 			var props = functions[i];
 			var sets = $.extend({type: props[0]}, 
-				(type == 'table' || type == 'discrete' ? {table: props[1].join(' ')} : 
-				(type == 'linear' ? {slope: props[1], intercept: props[2]} : 
-				(type == 'gamma' ? {amplitude: props[1], 
+				(props[0] == 'table' || props[0] == 'discrete' ? {tableValues: props[1].join(' ')} : 
+				(props[0] == 'linear' ? {slope: props[1], intercept: props[2]} : 
+				(props[0] == 'gamma' ? {amplitude: props[1], 
 				exponent: props[2], offset: props[3]} : {}))));
 			this._root._makeNode(node, 'feFunc' + rgba[i], sets);
 		}
@@ -169,7 +169,7 @@ $.extend(SVGFilter.prototype, {
 			settings = k1;
 			k1 = null;
 		}
-		var sets = $.extend({result: result, operator: operator, _in: in1, in2: in2},
+		var sets = $.extend({result: result, operator: operator, 'in': in1, in2: in2},
 			(k1 != null ? {k1: k1, k2: k2, k3: k3, k4: k4} : {}));
 		return this._root._makeNode(parent, 'feComposite', 
 			$.extend(sets, settings || {}));
@@ -204,7 +204,7 @@ $.extend(SVGFilter.prototype, {
 			colour = null;
 		}
 		return this._root._makeNode(parent, 'feDiffuseLighting', 
-			$.extend($.extend({result: result}, (colour ? {lighting_color: colour} : {})), settings || {}));
+			$.extend($.extend({result: result}, (colour ? {'lighting-color': colour} : {})), settings || {}));
 	},
 
 	/* Add a displacement map filter.
@@ -216,7 +216,7 @@ $.extend(SVGFilter.prototype, {
 	   @return  the new filter node */
 	displacementMap: function(parent, result, in1, in2, settings) {
 		return this._root._makeNode(parent, 'feDisplacementMap', 
-			$.extend({result: result, _in: in1, in2: in2}, settings || {}));
+			$.extend({result: result, 'in': in1, in2: in2}, settings || {}));
 	},
 
 	/* Add a flood filter.
@@ -238,7 +238,7 @@ $.extend(SVGFilter.prototype, {
 			settings = width;
 			x = null;
 		}
-		var sets = $.extend({result: result, flood_color: colour, flood_opacity: opacity},
+		var sets = $.extend({result: result, 'flood-color': colour, 'flood-opacity': opacity},
 			(x != null ? {x: x, y: y, width: width, height: height} : {}));
 		return this._root._makeNode(parent, 'feFlood', 
 			$.extend(sets, settings || {}));
@@ -258,7 +258,7 @@ $.extend(SVGFilter.prototype, {
 			stdDevY = null;
 		}
 		return this._root._makeNode(parent, 'feGaussianBlur', $.extend(
-			{result: result, _in: in1, stdDeviation: stdDevX + (stdDevY ? ' ' + stdDevY : '')}, 
+			{result: result, 'in': in1, stdDeviation: stdDevX + (stdDevY ? ' ' + stdDevY : '')}, 
 			settings || {}));
 	},
 
@@ -271,7 +271,7 @@ $.extend(SVGFilter.prototype, {
 	image: function(parent, result, href, settings) {
 		var node = this._root._makeNode(parent, 'feImage', $.extend(
 			{result: result}, settings || {}));
-		node.setAttributeNS(svgManager._xlinkNS, 'href', href);
+		node.setAttributeNS($.svg.xlinkNS, 'href', href);
 		return node;
 	},
 
@@ -285,7 +285,7 @@ $.extend(SVGFilter.prototype, {
 		var node = this._root._makeNode(parent, 'feMerge', $.extend(
 			{result: result}, settings || {}));
 		for (var i = 0; i < refs.length; i++) {
-			this._root._makeNode(node, 'feMergeNode', {_in: refs[i]});
+			this._root._makeNode(node, 'feMergeNode', {'in': refs[i]});
 		}
 		return node;
 	},
@@ -305,7 +305,7 @@ $.extend(SVGFilter.prototype, {
 			radiusY = null;
 		}
 		return this._root._makeNode(parent, 'feMorphology', $.extend(
-			{result: result, _in: in1, operator: operator, 
+			{result: result, 'in': in1, operator: operator, 
 			radius: radiusX + (radiusY ? ' ' + radiusY : '')}, settings || {}));
 	},
 
@@ -319,7 +319,7 @@ $.extend(SVGFilter.prototype, {
 	   @return  the new filter node */
 	offset: function(parent, result, in1, dx, dy, settings) {
 		return this._root._makeNode(parent, 'feOffset', $.extend(
-			{result: result, _in: in1, dx: dx, dy: dy}, settings || {}));
+			{result: result, 'in': in1, dx: dx, dy: dy}, settings || {}));
 	},
 
 	/* Add a specular lighting filter.
@@ -347,7 +347,7 @@ $.extend(SVGFilter.prototype, {
 			specularExponent = null;
 		}
 		return this._root._makeNode(parent, 'feSpecularLighting', $.extend(
-			{result: result, _in: in1, surfaceScale: surfaceScale, 
+			{result: result, 'in': in1, surfaceScale: surfaceScale, 
 			specularConstant: specularConstant, specularExponent: specularExponent}, 
 			settings || {}));
 	},
@@ -364,7 +364,7 @@ $.extend(SVGFilter.prototype, {
 	   @return  the new filter node */
 	tile: function(parent, result, in1, x, y, width, height, settings) {
 		return this._root._makeNode(parent, 'feTile', $.extend(
-			{result: result, _in: in1, x: x, y: y, width: width, height: height}, 
+			{result: result, 'in': in1, x: x, y: y, width: width, height: height}, 
 			settings || {}));
 	},
 
@@ -390,7 +390,8 @@ $.extend(SVGFilter.prototype, {
 
 /* Determine whether an object is an array. */
 function isArray(a) {
-	return (a.constructor && a.constructor.toString().match(/\Array\(\)/));
+	return (($.browser.safari && typeof a == 'object' && a.length) ||
+		(a && a.constructor && a.constructor.toString().match(/\Array\(\)/)));
 }
 
 })(jQuery)
