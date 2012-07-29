@@ -1020,7 +1020,9 @@ $.extend(SVGWrapper.prototype, {
 				wrapper.configure(parent, {width: size[0], height: size[1]});
 			}
 			if (settings.onLoad) {
-				settings.onLoad.apply(wrapper._container || wrapper._svg, [wrapper]);
+				var w = data.documentElement.getAttribute('width');
+				var h = data.documentElement.getAttribute('height');
+				settings.onLoad.apply(wrapper._container || wrapper._svg, [wrapper, w, h]);
 			}
 		};
 		if (url.match('<svg')) { // Inline SVG
