@@ -992,6 +992,16 @@ $.extend(SVGWrapper.prototype, {
 					(messages.length ? messages[0] : errors[0]).firstChild.nodeValue);
 				return;
 			}
+			if (!settings.forceKeepRelativePath && url.search(/\//) != -1) {
+				var base = url.replace(/\/[^\/]*$/, '/');
+				$("*[xlink\\:href]", data.documentElement).each( function(i,el) {
+					var href = $(el).attr('xlink:href')+"";
+					if (!href.match(/(^[a-z]([-a-z0-9+.])*:.*$)|(^\/.*$)/i)) {
+						// only consider relative href
+						$(el).attr('xlink:href', base + $(el).attr('xlink:href'));
+					}
+				});
+			}
 			var parent = (settings.parent ? $(settings.parent)[0] : wrapper._svg);
 			var attrs = {};
 			for (var i = 0; i < data.documentElement.attributes.length; i++) {
