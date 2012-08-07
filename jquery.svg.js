@@ -996,7 +996,7 @@ $.extend(SVGWrapper.prototype, {
 				var base = url.replace(/\/[^\/]*$/, '/');
 				$("*[xlink\\:href]", data.documentElement).each( function(i,el) {
 					var href = $(el).attr('xlink:href')+"";
-					if (!href.match(/(^[a-z]([-a-z0-9+.])*:.*$)|(^\/.*$)/i)) {
+					if (!href.match(/(^[a-z]([-a-z0-9+.])*:.*$)|(^\/.*$)/i) && href[0] != '#') {
 						// only consider relative href
 						$(el).attr('xlink:href', base + $(el).attr('xlink:href'));
 					}
