@@ -1,0 +1,39 @@
+{
+	"name": "kbw.svg",
+	"title": "jQuery SVG Integration",
+	"description": "This plugin allows you to control/interact with SVG elements within your HTML documents. * Native SVG support in major browsers (but only IE9+). * Create a new SVG element or wrap an existing inline SVG element. * Animate SVG attributes with the svganim module. * Apply jQuery class/attribute/event functionality to SVG elements with the svgdom module. * Draw graphs with the svggraph module. * Plot functions with the svgplot module.",
+	"keywords": [
+		"svg",
+		"canvas",
+		"graphics",
+		"graph",
+		"chart",
+		"plot",
+		"ui"
+	],
+	"version": "1.5.0",
+	"author": {
+		"name": "Keith Wood",
+		"url": "http://keith-wood.name/"
+	},
+	"maintainers": [
+		{
+			"name": "Keith Wood",
+			"email": "kbwood@iinet.com.au",
+			"url": "http://keith-wood.name/"
+		}
+	],
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "http://keith-wood.name/license.html"
+		}
+	],
+	"bugs": "https://github.com/kbwood/svg/issues",
+	"homepage": "http://keith-wood.name/svg.html",
+	"docs": "http://keith-wood.name/svgRef.html",
+	"download": "http://keith-wood.name/svg.html",
+	"dependencies": {
+		"jquery": ">=1.7"
+	}
+}
