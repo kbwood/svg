@@ -943,6 +943,16 @@ $.extend(SVGWrapper.prototype, {
 				reportError(!errors.length ? '???' : (messages.length ? messages[0] : errors[0]).firstChild.nodeValue);
 				return;
 			}
+			if (!settings.forceKeepRelativePath && url.search(/\//) != -1) {
+				var base = url.replace(/\/[^\/]*$/, '/');
+				$("*[xlink\\:href]", data.documentElement).each( function(i,el) {
+					var href = $(el).attr('xlink:href')+"";
+					if (!href.match(/(^[a-z]([-a-z0-9+.])*:.*$)|(^\/.*$)/i) && href[0] != '#') {
+						// only consider relative href
+						$(el).attr('xlink:href', base + $(el).attr('xlink:href'));
+					}
+				});
+			}
 			var parent = (settings.parent ? $(settings.parent)[0] : wrapper._svg);
 			var attrs = {};
 			for (var i = 0; i < data.documentElement.attributes.length; i++) {
@@ -977,7 +987,9 @@ $.extend(SVGWrapper.prototype, {
 				wrapper.configure(parent, {width: size[0], height: size[1]});
 			}
 			if (settings.onLoad) {
-				settings.onLoad.apply(wrapper._container || wrapper._svg, [wrapper]);
+				var w = data.documentElement.getAttribute('width');
+				var h = data.documentElement.getAttribute('height');
+				settings.onLoad.apply(wrapper._container || wrapper._svg, [wrapper, w, h]);
 			}
 		};
 		if (url.match('<svg')) { // Inline SVG
