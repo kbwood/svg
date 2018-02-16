@@ -1,0 +1,22 @@
+{
+    "name": "@ofcs/jquery-svg",
+    "version": "1.5.0",
+    "description": "jQuery SVG Integration ======================",
+    "main": "jquery.svg.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/brainbits/jquery-svg.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/brainbits/jquery-svg/issues"
+    },
+    "homepage": "https://github.com/brainbits/jquery-svg#readme",
+    "publishConfig": {
+        "registry": "http://npm.int-vm-rancher-host2.brainbits-gmbh.local"
+    }
+}
